@@ -132,6 +132,7 @@
   .loading { text-align: center; padding: 3rem; color: var(--text3); }
   .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--orange); border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 8px; vertical-align: middle; }
   @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes slideIn { from { transform: translateX(120%); opacity:0; } to { transform: translateX(0); opacity:1; } }
 
   /* FILTER BAR */
   .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.25rem; align-items: center; }
@@ -498,6 +499,11 @@
         <label>Fotos (URLs separadas por vírgula ou clique em Upload)</label>
         <textarea id="os-fotos" placeholder="https://... ou envie para Supabase Storage e cole os links"></textarea>
         <div class="setup-note" style="margin-top:6px;">💡 Use o Supabase Storage ou Imgur para hospedar as fotos e cole os links aqui.</div>
+      </div>
+      <div class="field admin-only" style="border-top:1px solid var(--border);padding-top:1rem;margin-top:0.5rem;">
+        <label style="color:var(--orange);font-weight:700;">📦 Materiais para Compra (cliente verá na aba Materiais)</label>
+        <div id="os-compra-list"></div>
+        <button class="btn btn-secondary btn-sm" onclick="addCompraRow()" style="margin-top:6px;">+ Adicionar Material para Compra</button>
       </div>
       <input type="hidden" id="os-edit-id"/>
     </div>
@@ -883,6 +889,7 @@ function inicializarApp(clienteData) {
   }
 
   carregarTudo();
+  setTimeout(verificarAlertasMateriais, 2000);
 }
 
 // ===== DADOS =====
@@ -1174,6 +1181,7 @@ function editarOS(id) {
   if (os.data_inicio) document.getElementById('os-data-inicio').value = os.data_inicio.slice(0,16);
   if (os.data_conclusao) document.getElementById('os-data-conclusao').value = os.data_conclusao.slice(0,16);
   document.getElementById('os-pausas-list').innerHTML = '';
+  document.getElementById('os-compra-list').innerHTML = '';
   try {
     const pausas = os.pausas ? JSON.parse(os.pausas) : [];
     pausas.forEach(p => addPausaRow(p.motivo, p.inicio ? p.inicio.slice(0,16) : '', p.fim ? p.fim.slice(0,16) : ''));
@@ -1239,8 +1247,26 @@ async function salvarOS() {
       payload.status = 'Aberta';
       await sbFetch('ordens_servico', { method: 'POST', body: JSON.stringify(payload) });
     }
+    // Salvar materiais para compra vinculados a esta OS
+    const compraRows = document.querySelectorAll('.compra-row-item');
+    for (const row of compraRows) {
+      const nome = row.querySelector('.compra-nome-i').value.trim();
+      if (!nome) continue;
+      await sbFetch('materiais_necessarios', { method: 'POST', body: JSON.stringify({
+        nome,
+        quantidade: row.querySelector('.compra-qtd-i').value || 1,
+        unidade: row.querySelector('.compra-un-i').value,
+        urgencia: row.querySelector('.compra-urg-i').value,
+        obs: row.querySelector('.compra-obs-i').value,
+        cliente_id: clienteId,
+        os_referencia: payload.numero || '',
+        status: 'Pendente'
+      })});
+    }
+
     fecharModal('modal-os');
     await carregarOS();
+    await carregarMateriais();
     carregarDashboard();
   } catch(e) {
     errEl.style.display = 'block';
@@ -1258,6 +1284,7 @@ async function excluirOS(id) {
 function limparFormOS() {
   ['os-problema','os-diagnostico','os-fotos','os-data-conclusao','os-tecnico'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   document.getElementById('os-pausas-list').innerHTML = '';
+  document.getElementById('os-compra-list').innerHTML = '';
   // Preencher data_inicio com agora
   const agora = new Date();
   agora.setMinutes(agora.getMinutes() - agora.getTimezoneOffset());
@@ -1266,6 +1293,24 @@ function limparFormOS() {
   ['os-prioridade','os-status'].forEach(id => { const el = document.getElementById(id); if (el) el.selectedIndex = 0; });
   document.getElementById('os-materiais-list').innerHTML = '';
   document.getElementById('os-form-error').style.display = 'none';
+}
+
+function addCompraRow(nome='', qtd='', un='', urgencia='Normal', obs='') {
+  const div = document.createElement('div');
+  div.className = 'material-row compra-row-item';
+  div.style.cssText = 'flex-wrap:wrap;gap:6px;margin-bottom:8px;align-items:flex-start;';
+  div.innerHTML = `
+    <input class="compra-nome-i" type="text" placeholder="Material / Peça" value="${nome}" style="flex:2;min-width:140px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px 10px;outline:none;font-size:13px;"/>
+    <input class="compra-qtd-i" type="number" placeholder="Qtd" value="${qtd}" style="width:60px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px 10px;outline:none;font-size:13px;"/>
+    <input class="compra-un-i" type="text" placeholder="un" value="${un}" style="width:55px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px 10px;outline:none;font-size:13px;"/>
+    <select class="compra-urg-i" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px 10px;outline:none;font-size:12px;">
+      <option value="Normal" ${urgencia==='Normal'?'selected':''}>Normal</option>
+      <option value="Urgente" ${urgencia==='Urgente'?'selected':''}>Urgente</option>
+      <option value="Crítico" ${urgencia==='Crítico'?'selected':''}>Crítico</option>
+    </select>
+    <input class="compra-obs-i" type="text" placeholder="Observação / marca / modelo" value="${obs}" style="flex:3;min-width:140px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px 10px;outline:none;font-size:13px;"/>
+    <button onclick="this.closest('.compra-row-item').remove()" style="background:rgba(239,68,68,0.15);border:none;color:var(--red);cursor:pointer;padding:8px 10px;border-radius:var(--radius);">×</button>`;
+  document.getElementById('os-compra-list').appendChild(div);
 }
 
 function addPausaRow(motivo='', inicio='', fim='') {
@@ -1347,6 +1392,7 @@ function renderizarMateriais() {
       <td>
         <div style="font-weight:600;">${m.nome}</div>
         ${m.obs ? `<div style="font-size:11px;color:var(--text2);margin-top:2px;">${m.obs}</div>` : ''}
+        ${m.atualizado_por === 'client' && m.atualizado_em ? `<div style="font-size:10px;color:var(--green);margin-top:2px;">✓ Atualizado pelo cliente em ${fmtDateShort(m.atualizado_em)}</div>` : ''}
       </td>
       <td>${m.quantidade}</td>
       <td>${m.unidade || '-'}</td>
@@ -1354,8 +1400,9 @@ function renderizarMateriais() {
       <td style="font-family:monospace;font-size:12px;color:var(--orange);">${m.os_referencia || '-'}</td>
       <td>${badgeUrgencia(m.urgencia)}</td>
       <td>
-        <select onchange="atualizarStatusMaterial('${m.id}', this.value)" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:4px 8px;font-size:12px;outline:none;" ${MODO === 'client' ? 'disabled' : ''}>
+        <select onchange="atualizarStatusMaterial('${m.id}', this.value, '${m.nome}', '${m.clientes?.nome||''}')" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:4px 8px;font-size:12px;outline:none;">
           <option value="Pendente" ${m.status==='Pendente'?'selected':''}>Pendente</option>
+          <option value="Aguardando Compra" ${m.status==='Aguardando Compra'?'selected':''}>Aguardando Compra</option>
           <option value="Em Pedido" ${m.status==='Em Pedido'?'selected':''}>Em Pedido</option>
           <option value="Comprado" ${m.status==='Comprado'?'selected':''}>Comprado</option>
         </select>
@@ -1399,9 +1446,36 @@ async function salvarMaterial() {
   await carregarMateriais();
 }
 
-async function atualizarStatusMaterial(id, status) {
-  await sbFetch(`materiais_necessarios?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify({ status }), prefer: 'return=minimal' });
+async function atualizarStatusMaterial(id, status, nome, clienteNome) {
+  await sbFetch(`materiais_necessarios?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify({ status, atualizado_por: MODO, atualizado_em: new Date().toISOString() }), prefer: 'return=minimal' });
   await carregarMateriais();
+  // Se cliente mudou status, mostrar alerta para admin quando ele entrar
+  if (MODO === 'client') {
+    const alertas = JSON.parse(localStorage.getItem('cdb_alertas_mat') || '[]');
+    alertas.push({ id, nome, clienteNome, status, em: new Date().toISOString() });
+    localStorage.setItem('cdb_alertas_mat', JSON.stringify(alertas));
+  }
+}
+
+function verificarAlertasMateriais() {
+  if (MODO !== 'admin') return;
+  const alertas = JSON.parse(localStorage.getItem('cdb_alertas_mat') || '[]');
+  if (!alertas.length) return;
+  alertas.forEach(a => {
+    const emoji = a.status === 'Comprado' ? '✅' : '⏳';
+    const msg = `${emoji} ${a.clienteNome || 'Cliente'} marcou "${a.nome}" como "${a.status}"`;
+    mostrarNotificacao(msg, a.status === 'Comprado' ? 'success' : 'info');
+  });
+  localStorage.removeItem('cdb_alertas_mat');
+}
+
+function mostrarNotificacao(msg, tipo = 'info') {
+  const cores = { success: 'var(--green)', info: 'var(--blue)', warning: 'var(--yellow)', error: 'var(--red)' };
+  const div = document.createElement('div');
+  div.style.cssText = `position:fixed;bottom:24px;right:24px;background:var(--bg2);border:1px solid ${cores[tipo]};border-radius:var(--radius-lg);padding:14px 18px;font-size:13px;color:var(--text);z-index:9999;max-width:340px;box-shadow:0 4px 20px rgba(0,0,0,0.3);animation:slideIn 0.3s ease;`;
+  div.innerHTML = `<div style="margin-bottom:4px;font-weight:600;color:${cores[tipo]};">Atualização de Material</div>${msg}<button onclick="this.parentElement.remove()" style="position:absolute;top:8px;right:10px;background:none;border:none;color:var(--text2);cursor:pointer;font-size:16px;">×</button>`;
+  document.body.appendChild(div);
+  setTimeout(() => div.remove(), 6000);
 }
 
 async function excluirMaterial(id) {
