@@ -428,6 +428,21 @@
         <div id="os-materiais-list"></div>
         <button class="btn btn-secondary btn-sm" onclick="addMaterialRow()" style="margin-top:6px;">+ Material</button>
       </div>
+      <div class="grid-2 admin-only">
+        <div class="field">
+          <label>Data/Hora de Início do Serviço</label>
+          <input id="os-data-inicio" type="datetime-local"/>
+        </div>
+        <div class="field">
+          <label>Data/Hora de Conclusão</label>
+          <input id="os-data-conclusao" type="datetime-local"/>
+        </div>
+      </div>
+      <div class="field admin-only">
+        <label>Pausas / Pendências</label>
+        <div id="os-pausas-list"></div>
+        <button class="btn btn-secondary btn-sm" onclick="addPausaRow()" style="margin-top:6px;">+ Adicionar Pausa</button>
+      </div>
       <div class="field admin-only">
         <label>Fotos (URLs separadas por vírgula ou clique em Upload)</label>
         <textarea id="os-fotos" placeholder="https://... ou envie para Supabase Storage e cole os links"></textarea>
@@ -627,6 +642,9 @@ create table if not exists ordens_servico (
   prioridade text default 'Média',
   fotos text,
   materiais_utilizados text,
+  data_inicio timestamptz,
+  data_conclusao timestamptz,
+  pausas text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -963,6 +981,8 @@ function verOS(id) {
         <div><span style="color:var(--text2);font-size:12px;">Prioridade</span><br>${badgePrioridade(os.prioridade)}</div>
         <div><span style="color:var(--text2);font-size:12px;">Abertura</span><br><strong>${fmtDate(os.created_at)}</strong></div>
         <div><span style="color:var(--text2);font-size:12px;">Atualização</span><br><strong>${fmtDate(os.updated_at)}</strong></div>
+        ${os.data_inicio ? `<div><span style="color:var(--text2);font-size:12px;">Início do Serviço</span><br><strong>${fmtDate(os.data_inicio)}</strong></div>` : ''}
+        ${os.data_conclusao ? `<div><span style="color:var(--text2);font-size:12px;">Conclusão</span><br><strong>${fmtDate(os.data_conclusao)}</strong></div>` : ''}
       </div>
     </div>
     <div class="report-section">
@@ -970,6 +990,32 @@ function verOS(id) {
       <p style="color:var(--text);line-height:1.7;">${os.problema}</p>
     </div>
     ${os.diagnostico ? `<div class="report-section"><h3>Diagnóstico / Serviço Realizado</h3><p style="color:var(--text);line-height:1.7;">${os.diagnostico}</p></div>` : ''}
+    ${(() => {
+      try {
+        const pausas = os.pausas ? JSON.parse(os.pausas) : [];
+        if (!pausas.length) return '';
+        const tempo = calcularTempoPausa(pausas);
+        return `<div class="report-section">
+          <h3>Pausas / Pendências${tempo ? ' — Total: ' + tempo : ''}</h3>
+          <table style="width:100%;font-size:13px;">
+            <thead><tr>
+              <th style="text-align:left;padding:6px 0;color:var(--text2);">Motivo</th>
+              <th style="text-align:left;padding:6px 0;color:var(--text2);">Início</th>
+              <th style="text-align:left;padding:6px 0;color:var(--text2);">Fim</th>
+              <th style="text-align:left;padding:6px 0;color:var(--text2);">Duração</th>
+            </tr></thead>
+            <tbody>${pausas.map(p => {
+              let dur = '-';
+              if (p.inicio && p.fim) {
+                const min = Math.round((new Date(p.fim) - new Date(p.inicio)) / 60000);
+                if (min > 0) { const h = Math.floor(min/60); const m = min%60; dur = h > 0 ? h+'h '+m+'min' : m+'min'; }
+              }
+              return '<tr><td style="padding:5px 0;border-bottom:1px solid var(--border);">'+p.motivo+'</td><td style="padding:5px 0;border-bottom:1px solid var(--border);">'+( p.inicio ? fmtDate(p.inicio) : '-')+'</td><td style="padding:5px 0;border-bottom:1px solid var(--border);">'+(p.fim ? fmtDate(p.fim) : 'Em andamento')+'</td><td style="padding:5px 0;border-bottom:1px solid var(--border);">'+dur+'</td></tr>';
+            }).join('')}</tbody>
+          </table>
+        </div>`;
+      } catch { return ''; }
+    })()}
     ${materiais.length ? `
     <div class="report-section">
       <h3>Materiais Utilizados</h3>
@@ -1025,6 +1071,13 @@ function editarOS(id) {
   document.getElementById('os-status').value = os.status;
   document.getElementById('os-diagnostico').value = os.diagnostico || '';
   document.getElementById('os-fotos').value = os.fotos || '';
+  if (os.data_inicio) document.getElementById('os-data-inicio').value = os.data_inicio.slice(0,16);
+  if (os.data_conclusao) document.getElementById('os-data-conclusao').value = os.data_conclusao.slice(0,16);
+  document.getElementById('os-pausas-list').innerHTML = '';
+  try {
+    const pausas = os.pausas ? JSON.parse(os.pausas) : [];
+    pausas.forEach(p => addPausaRow(p.motivo, p.inicio ? p.inicio.slice(0,16) : '', p.fim ? p.fim.slice(0,16) : ''));
+  } catch {}
   if (document.getElementById('os-cliente-id')) {
     document.getElementById('os-cliente-id').value = os.cliente_id;
     carregarEquipamentosDoCliente().then(() => {
@@ -1103,10 +1156,47 @@ async function excluirOS(id) {
 }
 
 function limparFormOS() {
-  ['os-problema','os-diagnostico','os-fotos'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['os-problema','os-diagnostico','os-fotos','os-data-conclusao'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('os-pausas-list').innerHTML = '';
+  // Preencher data_inicio com agora
+  const agora = new Date();
+  agora.setMinutes(agora.getMinutes() - agora.getTimezoneOffset());
+  const el = document.getElementById('os-data-inicio');
+  if (el) el.value = agora.toISOString().slice(0,16);
   ['os-prioridade','os-status'].forEach(id => { const el = document.getElementById(id); if (el) el.selectedIndex = 0; });
   document.getElementById('os-materiais-list').innerHTML = '';
   document.getElementById('os-form-error').style.display = 'none';
+}
+
+function addPausaRow(motivo='', inicio='', fim='') {
+  const div = document.createElement('div');
+  div.className = 'material-row pausa-row-item';
+  div.innerHTML = `
+    <select class="pausa-motivo-i" style="flex:2;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px 10px;outline:none;font-size:13px;">
+      <option value="Aguardando Peça" ${motivo==='Aguardando Peça'?'selected':''}>Aguardando Peça</option>
+      <option value="Aguardando Aprovação" ${motivo==='Aguardando Aprovação'?'selected':''}>Aguardando Aprovação</option>
+      <option value="Aguardando Material" ${motivo==='Aguardando Material'?'selected':''}>Aguardando Material</option>
+      <option value="Aguardando Terceiro" ${motivo==='Aguardando Terceiro'?'selected':''}>Aguardando Terceiro</option>
+      <option value="Outro" ${motivo==='Outro'?'selected':''}>Outro</option>
+    </select>
+    <input class="pausa-inicio-i" type="datetime-local" value="${inicio}" style="flex:1.5;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px 10px;outline:none;font-size:12px;" title="Início da pausa"/>
+    <input class="pausa-fim-i" type="datetime-local" value="${fim}" style="flex:1.5;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px 10px;outline:none;font-size:12px;" title="Fim da pausa"/>
+    <button onclick="this.closest('.pausa-row-item').remove()" style="background:rgba(239,68,68,0.15);border:none;color:var(--red);cursor:pointer;padding:8px 10px;border-radius:var(--radius);">×</button>`;
+  document.getElementById('os-pausas-list').appendChild(div);
+}
+
+function calcularTempoPausa(pausas) {
+  let totalMin = 0;
+  pausas.forEach(p => {
+    if (p.inicio && p.fim) {
+      const diff = (new Date(p.fim) - new Date(p.inicio)) / 60000;
+      if (diff > 0) totalMin += diff;
+    }
+  });
+  if (!totalMin) return null;
+  const h = Math.floor(totalMin / 60);
+  const m = Math.round(totalMin % 60);
+  return h > 0 ? `${h}h ${m}min` : `${m}min`;
 }
 
 function addMaterialRow(nome = '', qtd = '', un = '') {
