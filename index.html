@@ -324,6 +324,7 @@
               <th class="admin-only">Cliente</th>
               <th>Problema</th>
               <th>Status</th>
+              <th>Tipo</th>
               <th>Prioridade</th>
               <th>Data</th>
               <th>Ações</th>
@@ -418,6 +419,16 @@
             <option value="Concluída">Concluída</option>
           </select>
         </div>
+      </div>
+      <div class="field">
+        <label>Tipo de Serviço</label>
+        <select id="os-tipo-servico">
+          <option value="Manutenção Corretiva">Manutenção Corretiva</option>
+          <option value="Manutenção Preventiva">Manutenção Preventiva</option>
+          <option value="Mau Uso">Mau Uso</option>
+          <option value="Instalação Nova">Instalação Nova</option>
+          <option value="Novo Projeto">Novo Projeto</option>
+        </select>
       </div>
       <div class="field admin-only">
         <label>Diagnóstico / Serviço Realizado</label>
@@ -589,6 +600,10 @@
         <label>Endereço</label>
         <input id="cli-endereco" type="text" placeholder="Opcional"/>
       </div>
+      <div class="field">
+        <label>URL do Logo do Cliente</label>
+        <input id="cli-logo" type="url" placeholder="https://... (link da imagem do logo)"/>
+      </div>
       <div class="alert alert-info" style="margin-top:0.5rem;">
         O cliente acessa o sistema pelo link: <strong id="link-preview">?cliente=CODIGO</strong>
       </div>
@@ -617,6 +632,7 @@ create table if not exists clientes (
   contato text,
   email text,
   endereco text,
+  logo_url text,
   created_at timestamptz default now()
 );
 
@@ -645,6 +661,7 @@ create table if not exists ordens_servico (
   data_inicio timestamptz,
   data_conclusao timestamptz,
   pausas text,
+  tipo_servico text default 'Manutenção Corretiva',
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -714,6 +731,18 @@ function fmtDateShort(d) {
   return new Date(d).toLocaleDateString('pt-BR');
 }
 
+
+function badgeTipoServico(t) {
+  const map = {
+    'Manutenção Corretiva': 'badge-open',
+    'Manutenção Preventiva': 'badge-done',
+    'Mau Uso': 'badge-alta',
+    'Instalação Nova': 'badge-progress',
+    'Novo Projeto': 'badge-waiting'
+  };
+  return `<span class="badge ${map[t] || 'badge-waiting'}">${t || '-'}</span>`;
+}
+
 function badgeStatus(s) {
   const map = { 'Aberta': 'open', 'Em Andamento': 'progress', 'Concluída': 'done', 'Aguardando Peça': 'waiting' };
   return `<span class="badge badge-${map[s] || 'open'}">${s}</span>`;
@@ -780,7 +809,14 @@ function inicializarApp(clienteData) {
     document.getElementById('nav-clientes').style.display = 'none';
     const banner = document.getElementById('client-banner');
     banner.style.display = 'block';
-    banner.innerHTML = `<h1>🏢 ${clienteData.nome}</h1><p>Bem-vindo ao portal de ordens de serviço. Abra chamados e acompanhe o status dos seus equipamentos.</p>`;
+    banner.innerHTML = `
+      <div style="display:flex;align-items:center;gap:16px;">
+        ${clienteData.logo_url ? `<img src="${clienteData.logo_url}" style="height:60px;object-fit:contain;border-radius:8px;" onerror="this.style.display='none'"/>` : ''}
+        <div>
+          <h1 style="margin:0;">${clienteData.nome}</h1>
+          <p style="margin:4px 0 0;">Bem-vindo ao portal de ordens de serviço. Abra chamados e acompanhe o status dos seus equipamentos.</p>
+        </div>
+      </div>`;
     document.getElementById('user-badge').textContent = clienteData.nome;
     document.getElementById('os-filter-cliente').style.display = 'none';
   } else {
@@ -951,6 +987,7 @@ function renderOSTable(lista) {
       <td class="admin-only" style="${MODO === 'client' ? 'display:none;' : ''}">${o.clientes?.nome || '-'}</td>
       <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${o.problema}">${o.problema}</td>
       <td>${badgeStatus(o.status)}</td>
+      <td>${badgeTipoServico(o.tipo_servico)}</td>
       <td>${badgePrioridade(o.prioridade)}</td>
       <td style="color:var(--text2);font-size:12px;">${fmtDateShort(o.created_at)}</td>
       <td>
@@ -981,6 +1018,7 @@ function verOS(id) {
         <div><span style="color:var(--text2);font-size:12px;">Prioridade</span><br>${badgePrioridade(os.prioridade)}</div>
         <div><span style="color:var(--text2);font-size:12px;">Abertura</span><br><strong>${fmtDate(os.created_at)}</strong></div>
         <div><span style="color:var(--text2);font-size:12px;">Atualização</span><br><strong>${fmtDate(os.updated_at)}</strong></div>
+        <div><span style="color:var(--text2);font-size:12px;">Tipo de Serviço</span><br>${badgeTipoServico(os.tipo_servico)}</div>
         ${os.data_inicio ? `<div><span style="color:var(--text2);font-size:12px;">Início do Serviço</span><br><strong>${fmtDate(os.data_inicio)}</strong></div>` : ''}
         ${os.data_conclusao ? `<div><span style="color:var(--text2);font-size:12px;">Conclusão</span><br><strong>${fmtDate(os.data_conclusao)}</strong></div>` : ''}
       </div>
@@ -1071,6 +1109,7 @@ function editarOS(id) {
   document.getElementById('os-status').value = os.status;
   document.getElementById('os-diagnostico').value = os.diagnostico || '';
   document.getElementById('os-fotos').value = os.fotos || '';
+  document.getElementById('os-tipo-servico').value = os.tipo_servico || 'Manutenção Corretiva';
   if (os.data_inicio) document.getElementById('os-data-inicio').value = os.data_inicio.slice(0,16);
   if (os.data_conclusao) document.getElementById('os-data-conclusao').value = os.data_conclusao.slice(0,16);
   document.getElementById('os-pausas-list').innerHTML = '';
@@ -1376,7 +1415,7 @@ function renderizarClientes() {
 }
 
 function abrirModalCliente() {
-  ['cli-nome','cli-codigo','cli-contato','cli-email','cli-endereco'].forEach(id => document.getElementById(id).value = '');
+  ['cli-nome','cli-codigo','cli-contato','cli-email','cli-endereco','cli-logo'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   document.getElementById('cli-edit-id').value = '';
   abrirModal('modal-cliente');
 }
@@ -1390,6 +1429,7 @@ function editarCliente(id) {
   document.getElementById('cli-contato').value = c.contato || '';
   document.getElementById('cli-email').value = c.email || '';
   document.getElementById('cli-endereco').value = c.endereco || '';
+  document.getElementById('cli-logo').value = c.logo_url || '';
   document.getElementById('link-preview').textContent = '?cliente=' + c.codigo;
   abrirModal('modal-cliente');
 }
@@ -1402,6 +1442,7 @@ async function salvarCliente() {
     contato: document.getElementById('cli-contato').value.trim(),
     email: document.getElementById('cli-email').value.trim(),
     endereco: document.getElementById('cli-endereco').value.trim(),
+    logo_url: document.getElementById('cli-logo').value.trim(),
   };
   if (!payload.nome || !payload.codigo) return;
   if (editId) {
