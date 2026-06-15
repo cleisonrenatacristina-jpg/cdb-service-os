@@ -183,27 +183,29 @@
   </div>
   <div class="setup-card">
     <h2>⚙️ Configuração do Supabase</h2>
-    <div id="cfg-admin-fields">
-      <div class="field">
-        <label>URL do Projeto Supabase</label>
-        <input id="cfg-url" type="url" placeholder="https://xxxxxxxxxxxx.supabase.co"/>
-      </div>
-      <div class="field">
-        <label>Chave Anon Public</label>
-        <input id="cfg-key" type="text" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."/>
-      </div>
-      <div class="field">
-        <label>Senha Admin</label>
-        <input id="cfg-pass" type="password" placeholder="Senha de acesso admin"/>
-      </div>
+    <div class="field">
+      <label>URL do Projeto Supabase</label>
+      <input id="cfg-url" type="url" placeholder="https://xxxxxxxxxxxx.supabase.co"/>
     </div>
-    <div id="cfg-client-fields" style="display:none;">
-      <div class="field">
-        <label>Código da Empresa</label>
-        <input id="cfg-client-code" type="text" placeholder="EMP001" style="text-transform:uppercase;font-family:monospace;font-size:1.1rem;text-align:center;letter-spacing:2px;"/>
-      </div>
+    <div class="field">
+      <label>Chave Anon Public</label>
+      <input id="cfg-key" type="text" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."/>
     </div>
-    <input type="hidden" id="cfg-mode" value="client"/>
+    <div class="field">
+      <label>Modo de acesso</label>
+      <select id="cfg-mode" onchange="toggleModo()">
+        <option value="admin">Admin (eu)</option>
+        <option value="client">Cliente</option>
+      </select>
+    </div>
+    <div id="cfg-client-field" class="field" style="display:none;">
+      <label>Código do cliente</label>
+      <input id="cfg-client-code" type="text" placeholder="EMP001"/>
+    </div>
+    <div class="field">
+      <label>Senha Admin (para acesso admin)</label>
+      <input id="cfg-pass" type="password" placeholder="Deixe vazio se for cliente"/>
+    </div>
     <div id="cfg-error" class="alert alert-error" style="display:none;"></div>
     <button class="btn btn-primary btn-full" onclick="iniciarApp()">Entrar no Sistema</button>
     <div class="setup-note">
@@ -771,45 +773,25 @@ function gerarNumeroOS() {
 }
 
 // ===== SETUP =====
-// Alternar modo admin/cliente ao clicar no logo (segredo)
-let logoClicks = 0, logoTimer = null;
-document.querySelector('#setup-screen .logo, #setup-screen img')?.addEventListener?.('click', function() {
-  logoClicks++;
-  clearTimeout(logoTimer);
-  logoTimer = setTimeout(() => logoClicks = 0, 2000);
-  if (logoClicks >= 5) {
-    logoClicks = 0;
-    const isAdmin = document.getElementById('cfg-admin-fields').style.display !== 'none';
-    document.getElementById('cfg-admin-fields').style.display = isAdmin ? 'none' : 'block';
-    document.getElementById('cfg-client-fields').style.display = isAdmin ? 'block' : 'none';
-    document.getElementById('cfg-mode').value = isAdmin ? 'client' : 'admin';
-  }
-});
+function toggleModo() {
+  const modo = document.getElementById('cfg-mode').value;
+  document.getElementById('cfg-client-field').style.display = modo === 'client' ? 'block' : 'none';
+}
 
-// URL e Chave fixas (clientes não precisam preencher)
 const FIXED_SB_URL = 'https://vrmlvywprggjkdqahodr.supabase.co';
 const FIXED_SB_KEY = 'sb_publishable_jXVNGeyF5MlRqItzty2fzA_n5M1yAGq';
 
 async function iniciarApp() {
+  const url = (document.getElementById('cfg-url').value.trim().replace(/\/$/, '')) || FIXED_SB_URL;
+  const key = document.getElementById('cfg-key').value.trim() || FIXED_SB_KEY;
   const modo = document.getElementById('cfg-mode').value;
-  const pass = document.getElementById('cfg-pass') ? document.getElementById('cfg-pass').value : '';
-  const code = document.getElementById('cfg-client-code').value.trim().toUpperCase();
+  const pass = document.getElementById('cfg-pass').value;
+  const code = document.getElementById('cfg-client-code')?.value.trim().toUpperCase() || '';
   const errEl = document.getElementById('cfg-error');
   errEl.style.display = 'none';
 
-  let url = FIXED_SB_URL;
-  let key = FIXED_SB_KEY;
-
-  // Se admin, pode usar campos manuais se preenchidos
-  if (modo === 'admin') {
-    const manualUrl = document.getElementById('cfg-url')?.value.trim().replace(/\/$/, '');
-    const manualKey = document.getElementById('cfg-key')?.value.trim();
-    if (manualUrl) url = manualUrl;
-    if (manualKey) key = manualKey;
-  }
-
   if (modo === 'admin' && pass !== ADMIN_PASS) { errEl.style.display = 'block'; errEl.textContent = 'Senha admin incorreta.'; return; }
-  if (modo === 'client' && !code) { errEl.style.display = 'block'; errEl.textContent = 'Informe o código da sua empresa.'; return; }
+  if (modo === 'client' && !code) { errEl.style.display = 'block'; errEl.textContent = 'Informe o código do cliente.'; return; }
 
   SB_URL = url; SB_KEY = key; MODO = modo; CLIENT_CODE = code;
 
@@ -1527,7 +1509,7 @@ function copiarSQL() {
 }
 
 // Auto-preencher config salva
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
   const saved = localStorage.getItem('cdbservice_cfg');
   if (saved) {
     try {
@@ -1536,23 +1518,28 @@ window.addEventListener('load', () => {
       if (key) document.getElementById('cfg-key').value = key;
     } catch {}
   }
-  // Por padrão mostrar tela de cliente
-  document.getElementById('cfg-admin-fields').style.display = 'none';
-  document.getElementById('cfg-client-fields').style.display = 'block';
-  document.getElementById('cfg-mode').value = 'client';
 
-  // Auto-detectar código de cliente na URL
+  // Se vier ?cliente=CODIGO na URL, entrar direto como cliente sem mostrar tela de config
   const params = new URLSearchParams(window.location.search);
   const code = params.get('cliente');
   if (code) {
-    document.getElementById('cfg-client-code').value = code;
-  }
-  
-  // Se vier com ?admin na URL, mostrar campos admin
-  if (params.get('admin') !== null) {
-    document.getElementById('cfg-admin-fields').style.display = 'block';
-    document.getElementById('cfg-client-fields').style.display = 'none';
-    document.getElementById('cfg-mode').value = 'admin';
+    SB_URL = FIXED_SB_URL;
+    SB_KEY = FIXED_SB_KEY;
+    MODO = 'client';
+    CLIENT_CODE = code;
+    // Entrar direto
+    try {
+      const clientes = await sbFetch('clientes?codigo=eq.' + code + '&limit=1');
+      if (clientes && clientes.length) {
+        CLIENT_ID = clientes[0].id;
+        inicializarApp(clientes[0]);
+      } else {
+        document.getElementById('cfg-error').style.display = 'block';
+        document.getElementById('cfg-error').textContent = 'Código de cliente não encontrado.';
+      }
+    } catch(e) {
+      console.error(e);
+    }
   }
 });
 </script>
