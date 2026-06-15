@@ -246,7 +246,7 @@
     <nav id="main-nav">
       <button onclick="showTab('dashboard')" id="nav-dashboard" class="active"><span>Dashboard</span></button>
       <button onclick="showTab('os')" id="nav-os"><span>Ordens de Serviço</span></button>
-      <button onclick="showTab('materiais')" id="nav-materiais" class="admin-only"><span>Materiais</span></button>
+      <button onclick="showTab('materiais')" id="nav-materiais"><span>Materiais para Compra</span></button>
       <button onclick="showTab('equipamentos')" id="nav-equipamentos" class="admin-only"><span>Equipamentos</span></button>
       <button onclick="showTab('clientes')" id="nav-clientes" class="admin-only"><span>Clientes</span></button>
     </nav>
@@ -338,12 +338,35 @@
     <!-- MATERIAIS -->
     <div id="tab-materiais" class="tab-content">
       <div class="section-header">
-        <h2>Lista de Materiais Necessários</h2>
-        <button class="btn btn-primary" onclick="abrirModalMaterial()">+ Adicionar Material</button>
+        <h2>Materiais para Compra</h2>
+        <button class="btn btn-primary admin-only" onclick="abrirModalMaterial()">+ Adicionar Material</button>
+      </div>
+      <div id="mat-client-banner" style="display:none;" class="client-banner">
+        <h1 style="font-size:1rem;">📦 Lista de materiais que precisam ser comprados</h1>
+        <p>Acompanhe abaixo os itens solicitados pelo técnico. Itens marcados como <strong>Comprado</strong> já foram adquiridos.</p>
+      </div>
+      <div class="grid-4" style="margin-bottom:1.25rem;">
+        <div class="stat"><div class="stat-label">Total de Itens</div><div class="stat-value orange" id="mat-stat-total">0</div></div>
+        <div class="stat"><div class="stat-label">Pendentes</div><div class="stat-value red" id="mat-stat-pendente">0</div></div>
+        <div class="stat"><div class="stat-label">Comprados</div><div class="stat-value green" id="mat-stat-comprado">0</div></div>
+        <div class="stat"><div class="stat-label">Em Pedido</div><div class="stat-value" style="color:var(--yellow)" id="mat-stat-pedido">0</div></div>
       </div>
       <div class="card" style="padding:0;overflow:hidden;">
+        <div id="mat-empty" class="empty" style="display:none;padding:2rem;">
+          <p>Nenhum material cadastrado</p>
+          <button class="btn btn-primary admin-only" onclick="abrirModalMaterial()">+ Adicionar Material</button>
+        </div>
         <table class="os-table" id="mat-table">
-          <thead><tr><th>Material</th><th>Qtd.</th><th>Unidade</th><th>Cliente</th><th>OS Ref.</th><th>Status</th><th>Ações</th></tr></thead>
+          <thead><tr>
+            <th>Material / Peça</th>
+            <th>Qtd.</th>
+            <th>Unidade</th>
+            <th class="admin-only">Cliente</th>
+            <th>OS Ref.</th>
+            <th>Urgência</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr></thead>
           <tbody id="mat-tbody"></tbody>
         </table>
       </div>
@@ -507,7 +530,7 @@
 <div class="modal-overlay" id="modal-material">
   <div class="modal">
     <div class="modal-header">
-      <h2>Material Necessário</h2>
+      <h2>Material para Compra</h2>
       <button class="close-btn" onclick="fecharModal('modal-material')">×</button>
     </div>
     <div class="modal-body">
@@ -525,13 +548,27 @@
           <input id="mat-un" type="text" placeholder="un, m, kg..."/>
         </div>
       </div>
-      <div class="field">
-        <label>Cliente</label>
-        <select id="mat-cliente"></select>
+      <div class="grid-2">
+        <div class="field">
+          <label>Cliente</label>
+          <select id="mat-cliente"></select>
+        </div>
+        <div class="field">
+          <label>Urgência</label>
+          <select id="mat-urgencia">
+            <option value="Normal">Normal</option>
+            <option value="Urgente">Urgente</option>
+            <option value="Crítico">Crítico</option>
+          </select>
+        </div>
       </div>
       <div class="field">
         <label>OS de referência (opcional)</label>
         <input id="mat-os-ref" type="text" placeholder="OS-0001"/>
+      </div>
+      <div class="field">
+        <label>Observação</label>
+        <textarea id="mat-obs" placeholder="Marca, modelo, especificação técnica..." style="min-height:60px;"></textarea>
       </div>
       <input type="hidden" id="mat-edit-id"/>
     </div>
@@ -824,7 +861,7 @@ function inicializarApp(clienteData) {
       if (el.tagName === 'BUTTON' || el.tagName === 'SELECT') { el.style.display = 'none'; }
       else { el.style.display = 'none'; }
     });
-    document.getElementById('nav-materiais').style.display = 'none';
+    // nav-materiais visível para clientes
     document.getElementById('nav-equipamentos').style.display = 'none';
     document.getElementById('nav-clientes').style.display = 'none';
     const banner = document.getElementById('client-banner');
@@ -1274,35 +1311,67 @@ function addMaterialRow(nome = '', qtd = '', un = '') {
 }
 
 // ===== MATERIAIS NECESSÁRIOS =====
+function badgeUrgencia(u) {
+  const map = { 'Crítico': 'badge-alta', 'Urgente': 'badge-media', 'Normal': 'badge-baixa' };
+  return `<span class="badge ${map[u] || 'badge-baixa'}">${u || 'Normal'}</span>`;
+}
+
 function renderizarMateriais() {
   const tbody = document.getElementById('mat-tbody');
-  if (!allMateriais.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty" style="padding:2rem;text-align:center;color:var(--text3);">Nenhum material cadastrado</td></tr>';
+  const empty = document.getElementById('mat-empty');
+  const table = document.getElementById('mat-table');
+
+  // Filtrar por cliente se for modo client
+  let lista = allMateriais;
+  if (MODO === 'client' && CLIENT_ID) lista = lista.filter(m => m.cliente_id === CLIENT_ID);
+
+  // Stats
+  document.getElementById('mat-stat-total').textContent = lista.length;
+  document.getElementById('mat-stat-pendente').textContent = lista.filter(m => m.status === 'Pendente').length;
+  document.getElementById('mat-stat-comprado').textContent = lista.filter(m => m.status === 'Comprado').length;
+  document.getElementById('mat-stat-pedido').textContent = lista.filter(m => m.status === 'Em Pedido').length;
+
+  // Banner cliente
+  if (MODO === 'client') document.getElementById('mat-client-banner').style.display = 'block';
+
+  if (!lista.length) {
+    empty.style.display = 'block';
+    table.style.display = 'none';
     return;
   }
-  tbody.innerHTML = allMateriais.map(m => `
+  empty.style.display = 'none';
+  table.style.display = 'table';
+
+  tbody.innerHTML = lista.map(m => `
     <tr>
-      <td>${m.nome}</td>
+      <td>
+        <div style="font-weight:600;">${m.nome}</div>
+        ${m.obs ? `<div style="font-size:11px;color:var(--text2);margin-top:2px;">${m.obs}</div>` : ''}
+      </td>
       <td>${m.quantidade}</td>
       <td>${m.unidade || '-'}</td>
-      <td>${m.clientes?.nome || '-'}</td>
+      <td class="admin-only" style="${MODO === 'client' ? 'display:none;' : ''}">${m.clientes?.nome || '-'}</td>
       <td style="font-family:monospace;font-size:12px;color:var(--orange);">${m.os_referencia || '-'}</td>
-      <td><span class="badge ${m.status === 'Comprado' ? 'badge-done' : 'badge-open'}">${m.status}</span></td>
+      <td>${badgeUrgencia(m.urgencia)}</td>
+      <td>
+        <select onchange="atualizarStatusMaterial('${m.id}', this.value)" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:4px 8px;font-size:12px;outline:none;" ${MODO === 'client' ? 'disabled' : ''}>
+          <option value="Pendente" ${m.status==='Pendente'?'selected':''}>Pendente</option>
+          <option value="Em Pedido" ${m.status==='Em Pedido'?'selected':''}>Em Pedido</option>
+          <option value="Comprado" ${m.status==='Comprado'?'selected':''}>Comprado</option>
+        </select>
+      </td>
       <td>
         <div style="display:flex;gap:4px;">
-          ${m.status !== 'Comprado' ? `<button class="btn btn-secondary btn-sm" onclick="marcarComprado('${m.id}')">✓ Comprado</button>` : ''}
-          <button class="btn btn-danger btn-sm" onclick="excluirMaterial('${m.id}')">×</button>
+          ${MODO === 'admin' ? `<button class="btn btn-danger btn-sm" onclick="excluirMaterial('${m.id}')">×</button>` : ''}
         </div>
       </td>
     </tr>`).join('');
 }
 
 function abrirModalMaterial() {
-  document.getElementById('mat-nome').value = '';
-  document.getElementById('mat-qtd').value = '';
-  document.getElementById('mat-un').value = '';
-  document.getElementById('mat-os-ref').value = '';
+  ['mat-nome','mat-qtd','mat-un','mat-os-ref','mat-obs'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   document.getElementById('mat-edit-id').value = '';
+  document.getElementById('mat-urgencia').value = 'Normal';
   popularSelects();
   abrirModal('modal-material');
 }
@@ -1310,21 +1379,28 @@ function abrirModalMaterial() {
 async function salvarMaterial() {
   const nome = document.getElementById('mat-nome').value.trim();
   if (!nome) return;
+  const editId = document.getElementById('mat-edit-id').value;
   const payload = {
     nome,
     quantidade: document.getElementById('mat-qtd').value || 1,
     unidade: document.getElementById('mat-un').value,
     cliente_id: document.getElementById('mat-cliente').value || null,
     os_referencia: document.getElementById('mat-os-ref').value,
-    status: 'Pendente'
+    urgencia: document.getElementById('mat-urgencia').value,
+    obs: document.getElementById('mat-obs').value.trim(),
   };
-  await sbFetch('materiais_necessarios', { method: 'POST', body: JSON.stringify(payload) });
+  if (editId) {
+    await sbFetch(`materiais_necessarios?id=eq.${editId}`, { method: 'PATCH', body: JSON.stringify(payload), prefer: 'return=minimal' });
+  } else {
+    payload.status = 'Pendente';
+    await sbFetch('materiais_necessarios', { method: 'POST', body: JSON.stringify(payload) });
+  }
   fecharModal('modal-material');
   await carregarMateriais();
 }
 
-async function marcarComprado(id) {
-  await sbFetch(`materiais_necessarios?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify({ status: 'Comprado' }), prefer: 'return=minimal' });
+async function atualizarStatusMaterial(id, status) {
+  await sbFetch(`materiais_necessarios?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify({ status }), prefer: 'return=minimal' });
   await carregarMateriais();
 }
 
