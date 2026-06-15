@@ -444,6 +444,10 @@
         </select>
       </div>
       <div class="field admin-only">
+        <label>Técnico Responsável</label>
+        <input id="os-tecnico" type="text" placeholder="Nome do técnico responsável"/>
+      </div>
+      <div class="field admin-only">
         <label>Diagnóstico / Serviço Realizado</label>
         <textarea id="os-diagnostico" placeholder="O que foi feito, diagnosticado, trocado..."></textarea>
       </div>
@@ -676,6 +680,7 @@ create table if not exists ordens_servico (
   pausas text,
   tipo_servico text default 'Manutenção Corretiva',
   causa text,
+  tecnico text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -1035,6 +1040,7 @@ function verOS(id) {
         <div><span style="color:var(--text2);font-size:12px;">Atualização</span><br><strong>${fmtDate(os.updated_at)}</strong></div>
         <div><span style="color:var(--text2);font-size:12px;">Tipo de Serviço</span><br>${badgeTipoServico(os.tipo_servico)}</div>
         ${os.causa ? `<div><span style="color:var(--text2);font-size:12px;">Causa</span><br><strong>${os.causa}</strong></div>` : ''}
+        ${os.tecnico ? `<div><span style="color:var(--text2);font-size:12px;">Técnico Responsável</span><br><strong style="color:var(--orange);">👷 ${os.tecnico}</strong></div>` : ''}
         ${os.data_inicio ? `<div><span style="color:var(--text2);font-size:12px;">Início do Serviço</span><br><strong>${fmtDate(os.data_inicio)}</strong></div>` : ''}
         ${os.data_conclusao ? `<div><span style="color:var(--text2);font-size:12px;">Conclusão</span><br><strong>${fmtDate(os.data_conclusao)}</strong></div>` : ''}
       </div>
@@ -1127,6 +1133,7 @@ function editarOS(id) {
   document.getElementById('os-fotos').value = os.fotos || '';
   document.getElementById('os-tipo-servico').value = os.tipo_servico || 'Manutenção Corretiva';
   document.getElementById('os-causa').value = os.causa || '';
+  document.getElementById('os-tecnico').value = os.tecnico || '';
   if (os.data_inicio) document.getElementById('os-data-inicio').value = os.data_inicio.slice(0,16);
   if (os.data_conclusao) document.getElementById('os-data-conclusao').value = os.data_conclusao.slice(0,16);
   document.getElementById('os-pausas-list').innerHTML = '';
@@ -1212,7 +1219,7 @@ async function excluirOS(id) {
 }
 
 function limparFormOS() {
-  ['os-problema','os-diagnostico','os-fotos','os-data-conclusao'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['os-problema','os-diagnostico','os-fotos','os-data-conclusao','os-tecnico'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   document.getElementById('os-pausas-list').innerHTML = '';
   // Preencher data_inicio com agora
   const agora = new Date();
