@@ -268,6 +268,40 @@
   .btn-del-v { background: rgba(239,68,68,0.1); color: var(--red); border: 1px solid rgba(239,68,68,0.2); padding: 7px 10px; border-radius: var(--radius); cursor: pointer; font-size: 12px; }
   @media(max-width:700px) { .cal-cell { min-height: 48px; } .cal-ponto { display: none; } }
 
+  /* ── ORÇAMENTOS / CONTRATOS / FATURAMENTO ── */
+  .orc-status { display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.3px; }
+  .orc-rascunho  { background:rgba(100,116,139,.15);color:#94a3b8; }
+  .orc-enviado   { background:rgba(59,130,246,.15);color:#60a5fa; }
+  .orc-aprovado  { background:rgba(34,197,94,.15);color:#4ade80; }
+  .orc-recusado  { background:rgba(239,68,68,.15);color:#f87171; }
+  .orc-executado { background:rgba(168,85,247,.15);color:#c084fc; }
+  .orc-card { background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap; }
+  .orc-card:hover { border-color:var(--border2); }
+  .orc-num  { font-family:var(--font-mono);font-size:13px;font-weight:800;color:#fff;background:#000;border:1px solid #333;padding:3px 8px;border-radius:5px;letter-spacing:1px; }
+  .orc-titulo { font-size:14px;font-weight:700;margin:4px 0 2px; }
+  .orc-cliente { font-size:12px;color:var(--text2); }
+  .orc-valor  { font-size:18px;font-weight:800;color:var(--green);font-family:var(--font-mono); }
+  .orc-data   { font-size:11px;color:var(--text3); }
+  .orc-actions { display:flex;gap:6px;flex-wrap:wrap; }
+  /* Itens do orçamento */
+  .item-orc-row { display:grid;grid-template-columns:1fr 70px 110px 110px 36px;gap:6px;align-items:center;margin-bottom:6px; }
+  .item-orc-row input { background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:7px 10px;font-size:13px;outline:none;width:100%; }
+  .item-orc-row input:focus { border-color:var(--orange); }
+  .item-orc-total { font-size:12px;color:var(--text2);font-family:var(--font-mono);text-align:right;padding:7px 4px; }
+  /* Faturamento dashboard */
+  .fat-stat { background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;text-align:center; }
+  .fat-stat-label { font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px; }
+  .fat-stat-value { font-size:26px;font-weight:800;font-family:var(--font-mono); }
+  .fat-stat-value.verde { color:var(--green); }
+  .fat-stat-value.azul  { color:var(--blue); }
+  .fat-stat-value.roxo  { color:#a78bfa; }
+  .fat-stat-value.total { color:var(--orange); font-size:32px; }
+  .contrato-card { background:var(--bg2);border:1px solid var(--border);border-left:4px solid var(--green);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:10px; }
+  .contrato-card.pausado  { border-left-color:var(--yellow); }
+  .contrato-card.encerrado { border-left-color:var(--text3); }
+  /* Aprovação cliente */
+  .aprovacao-banner { background:linear-gradient(135deg,rgba(30,58,138,.2),rgba(0,0,0,.3));border:1.5px solid var(--orange);border-radius:var(--radius-lg);padding:1.25rem 1.5rem;margin-bottom:1.5rem; }
+
   /* BANNER DE ALERTA DE VISITA */
   .alerta-visita-wrap { margin-bottom: 1.25rem; }
   .alerta-visita {
@@ -373,6 +407,8 @@
       <button onclick="showTab('equipamentos')" id="nav-equipamentos" class="admin-only"><span>Equipamentos</span></button>
       <button onclick="showTab('clientes')" id="nav-clientes" class="admin-only"><span>Clientes</span></button>
       <button onclick="showTab('agenda')" id="nav-agenda"><span>📅 Agenda</span></button>
+      <button onclick="showTab('orcamentos')" id="nav-orcamentos"><span>📋 Orçamentos</span></button>
+      <button onclick="showTab('faturamento')" id="nav-faturamento" class="admin-only"><span>💰 Faturamento</span></button>
     </nav>
     <div class="header-right">
       <span class="user-badge" id="user-badge"></span>
@@ -517,6 +553,63 @@
         <button class="btn btn-primary" onclick="abrirModalCliente()">+ Cadastrar Cliente</button>
       </div>
       <div id="clientes-grid" class="grid-3"></div>
+    </div>
+
+    <!-- ORÇAMENTOS -->
+    <div id="tab-orcamentos" class="tab-content">
+      <div class="section-header">
+        <h2>📋 Orçamentos</h2>
+        <button class="btn btn-primary admin-only" onclick="abrirModalOrcamento()">+ Novo Orçamento</button>
+      </div>
+      <div id="orc-client-info" class="aprovacao-banner" style="display:none;">
+        <h3 style="margin-bottom:4px;color:var(--orange);">Seus Orçamentos</h3>
+        <p style="font-size:13px;color:var(--text2);">Revise e aprove ou recuse os orçamentos enviados.</p>
+      </div>
+      <div class="filter-bar admin-only">
+        <select id="orc-filtro-status" onchange="renderizarOrcamentos()">
+          <option value="">Todos os status</option>
+          <option value="rascunho">Rascunho</option>
+          <option value="enviado">Enviado</option>
+          <option value="aprovado">Aprovado</option>
+          <option value="recusado">Recusado</option>
+          <option value="executado">Executado</option>
+        </select>
+        <select id="orc-filtro-cliente" onchange="renderizarOrcamentos()">
+          <option value="">Todos os clientes</option>
+        </select>
+      </div>
+      <div id="orc-lista"></div>
+    </div>
+
+    <!-- FATURAMENTO -->
+    <div id="tab-faturamento" class="tab-content">
+      <div class="section-header">
+        <h2>💰 Dashboard de Faturamento</h2>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select id="fat-mes" onchange="renderizarFaturamento()" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px 12px;font-size:13px;outline:none;">
+            <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option>
+            <option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option>
+            <option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option>
+            <option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option>
+          </select>
+          <select id="fat-ano" onchange="renderizarFaturamento()" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px 12px;font-size:13px;outline:none;"></select>
+        </div>
+      </div>
+      <!-- Stats -->
+      <div class="grid-3" style="margin-bottom:1.5rem;" id="fat-stats">
+        <div class="fat-stat"><div class="fat-stat-label">Orçamentos Executados</div><div class="fat-stat-value verde" id="fat-val-orc">R$ 0,00</div></div>
+        <div class="fat-stat"><div class="fat-stat-label">Contratos Ativos</div><div class="fat-stat-value azul" id="fat-val-cont">R$ 0,00</div></div>
+        <div class="fat-stat"><div class="fat-stat-label">Total do Mês</div><div class="fat-stat-value total" id="fat-val-total">R$ 0,00</div></div>
+      </div>
+      <!-- Contratos -->
+      <div class="section-header">
+        <h3 style="font-size:1rem;">📄 Contratos</h3>
+        <button class="btn btn-primary btn-sm" onclick="abrirModalContrato()">+ Novo Contrato</button>
+      </div>
+      <div id="contratos-lista" style="margin-bottom:1.5rem;"></div>
+      <!-- Orçamentos do mês -->
+      <div class="section-header"><h3 style="font-size:1rem;">📋 Orçamentos Executados no Mês</h3></div>
+      <div id="fat-orc-lista"></div>
     </div>
 
     <!-- AGENDA -->
@@ -848,6 +941,128 @@
   </div>
 </div>
 
+<!-- MODAL: ORÇAMENTO -->
+<div class="modal-overlay" id="modal-orcamento">
+  <div class="modal" style="max-width:700px;">
+    <div class="modal-header">
+      <h2 id="modal-orc-titulo">Novo Orçamento</h2>
+      <button class="close-btn" onclick="fecharModal('modal-orcamento')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="grid-2">
+        <div class="field">
+          <label>Cliente *</label>
+          <select id="orc-cliente-id"></select>
+        </div>
+        <div class="field">
+          <label>Validade</label>
+          <input type="date" id="orc-validade"/>
+        </div>
+      </div>
+      <div class="field">
+        <label>Título do Orçamento *</label>
+        <input type="text" id="orc-titulo" placeholder="Ex: Manutenção preventiva geral"/>
+      </div>
+      <div class="field">
+        <label>Descrição / Escopo do Serviço</label>
+        <textarea id="orc-descricao" rows="3" placeholder="Descreva o que será feito..."></textarea>
+      </div>
+      <div class="field">
+        <label>Itens do Orçamento</label>
+        <div style="display:grid;grid-template-columns:1fr 70px 110px 110px 36px;gap:6px;margin-bottom:6px;">
+          <span style="font-size:11px;color:var(--text3);padding:0 4px;">Descrição</span>
+          <span style="font-size:11px;color:var(--text3);text-align:center;">Qtd</span>
+          <span style="font-size:11px;color:var(--text3);text-align:right;">Vlr Unit (R$)</span>
+          <span style="font-size:11px;color:var(--text3);text-align:right;">Total</span>
+          <span></span>
+        </div>
+        <div id="orc-itens-lista"></div>
+        <button class="btn btn-secondary btn-sm" onclick="addItemOrcamento()" style="margin-top:6px;">+ Item</button>
+      </div>
+      <div style="display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+        <span style="color:var(--text2);font-size:13px;">Total do Orçamento:</span>
+        <span id="orc-total-display" style="font-size:22px;font-weight:800;color:var(--green);font-family:monospace;">R$ 0,00</span>
+      </div>
+      <div class="field" style="margin-top:12px;">
+        <label>Observações</label>
+        <textarea id="orc-observacoes" rows="2" placeholder="Condições de pagamento, prazo de execução, etc."></textarea>
+      </div>
+      <input type="hidden" id="orc-edit-id"/>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="fecharModal('modal-orcamento')">Cancelar</button>
+      <button class="btn btn-secondary" onclick="salvarOrcamento('rascunho')">Salvar Rascunho</button>
+      <button class="btn btn-primary" onclick="salvarOrcamento('enviado')">Salvar e Enviar ao Cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: DETALHE ORÇAMENTO (cliente aprova) -->
+<div class="modal-overlay" id="modal-orc-detail">
+  <div class="modal" style="max-width:640px;">
+    <div class="modal-header">
+      <h2 id="orc-detail-titulo">Orçamento</h2>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary btn-sm no-print" onclick="imprimirOrcamento()">🖨️ PDF</button>
+        <button class="close-btn" onclick="fecharModal('modal-orc-detail')">×</button>
+      </div>
+    </div>
+    <div class="modal-body" id="orc-detail-body"></div>
+    <div class="modal-footer" id="orc-detail-footer"></div>
+  </div>
+</div>
+
+<!-- MODAL: CONTRATO -->
+<div class="modal-overlay" id="modal-contrato">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-cont-titulo">Novo Contrato</h2>
+      <button class="close-btn" onclick="fecharModal('modal-contrato')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Cliente *</label>
+        <select id="cont-cliente-id"></select>
+      </div>
+      <div class="field">
+        <label>Título do Contrato *</label>
+        <input type="text" id="cont-titulo" placeholder="Ex: Contrato de manutenção mensal"/>
+      </div>
+      <div class="field">
+        <label>Valor Mensal (R$) *</label>
+        <input type="number" id="cont-valor" placeholder="0,00" step="0.01" min="0"/>
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label>Início do Contrato</label>
+          <input type="date" id="cont-inicio"/>
+        </div>
+        <div class="field">
+          <label>Fim do Contrato</label>
+          <input type="date" id="cont-fim"/>
+        </div>
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="cont-status">
+          <option value="ativo">Ativo</option>
+          <option value="pausado">Pausado</option>
+          <option value="encerrado">Encerrado</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Especificações / Escopo</label>
+        <textarea id="cont-especificacoes" rows="4" placeholder="Descreva o que está incluído no contrato, equipamentos cobertos, frequência de visitas, etc."></textarea>
+      </div>
+      <input type="hidden" id="cont-edit-id"/>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="fecharModal('modal-contrato')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarContrato()">Salvar Contrato</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: VISITA AGENDADA -->
 <div class="modal-overlay" id="modal-visita">
   <div class="modal">
@@ -900,7 +1115,7 @@
 <script>
 // ===== ESTADO GLOBAL =====
 let SB_URL = '', SB_KEY = '', MODO = 'admin', CLIENT_CODE = '', CLIENT_ID = null;
-let allOS = [], allClientes = [], allEquipamentos = [], allMateriais = [], allVisitas = [];
+let allOS = [], allClientes = [], allEquipamentos = [], allMateriais = [], allVisitas = [], allOrcamentos = [], allContratos = [];
 let osSendoEditada = null;
 const ADMIN_PASS = 'cdb2024';
 let calMes = new Date().getMonth(), calAno = new Date().getFullYear(), calDataFiltro = null;
@@ -1136,9 +1351,10 @@ function inicializarApp(clienteData) {
 
 // ===== DADOS =====
 async function carregarTudo() {
-  await Promise.all([carregarClientes(), carregarEquipamentos(), carregarOS(), carregarMateriais(), carregarVisitas()]);
+  await Promise.all([carregarClientes(), carregarEquipamentos(), carregarOS(), carregarMateriais(), carregarVisitas(), carregarOrcamentos(), carregarContratos()]);
   carregarDashboard();
   popularSelects();
+  iniciarFaturamento();
 }
 
 async function carregarClientes() {
@@ -1171,12 +1387,12 @@ async function carregarMateriais() {
 // ===== POPULARIZAR SELECTS =====
 function popularSelects() {
   // Selects de cliente nos modais
-  const selects = ['os-cliente-id', 'mat-cliente', 'equip-cliente-id', 'equip-filter-cliente', 'os-filter-cliente', 'dashboard-client-filter', 'agenda-filtro-cliente', 'visita-cliente-id'];
+  const selects = ['os-cliente-id', 'mat-cliente', 'equip-cliente-id', 'equip-filter-cliente', 'os-filter-cliente', 'dashboard-client-filter', 'agenda-filtro-cliente', 'visita-cliente-id', 'orc-cliente-id', 'orc-filtro-cliente', 'cont-cliente-id'];
   selects.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     const prev = el.value;
-    const opts = el.id === 'dashboard-client-filter' || el.id === 'os-filter-cliente' || el.id === 'equip-filter-cliente' ? '<option value="">Todos</option>' : '<option value="">Selecione...</option>';
+    const opts = ['dashboard-client-filter','os-filter-cliente','equip-filter-cliente','orc-filtro-cliente'].includes(el.id) ? '<option value="">Todos</option>' : '<option value="">Selecione...</option>';
     el.innerHTML = opts + allClientes.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
     el.value = prev;
   });
@@ -1892,6 +2108,384 @@ async function excluirCliente(id) {
   await carregarClientes();
 }
 
+// ===== ORÇAMENTOS =====
+const fmtMoeda = v => 'R$ ' + Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const parseMoeda = s => parseFloat((s||'0').replace(/[^\d,]/g,'').replace(',','.')) || 0;
+
+async function carregarOrcamentos() {
+  try {
+    let q = 'orcamentos?select=*,clientes(id,nome)&order=created_at.desc';
+    if (MODO === 'client' && CLIENT_ID) q += `&cliente_id=eq.${CLIENT_ID}&status=neq.rascunho`;
+    allOrcamentos = await sbFetch(q) || [];
+  } catch(e) { allOrcamentos = []; }
+}
+
+async function carregarContratos() {
+  try {
+    let q = 'contratos?select=*,clientes(id,nome)&order=created_at.desc';
+    allContratos = await sbFetch(q) || [];
+  } catch(e) { allContratos = []; }
+}
+
+function renderizarOrcamentos() {
+  const lista = document.getElementById('orc-lista');
+  if (!lista) return;
+  const filtStatus  = document.getElementById('orc-filtro-status')?.value || '';
+  const filtCliente = document.getElementById('orc-filtro-cliente')?.value || '';
+  let orcs = allOrcamentos;
+  if (filtStatus)  orcs = orcs.filter(o => o.status === filtStatus);
+  if (filtCliente) orcs = orcs.filter(o => o.cliente_id === filtCliente);
+  if (MODO === 'client') {
+    document.getElementById('orc-client-info').style.display = 'block';
+    orcs = orcs.filter(o => ['enviado','aprovado','recusado','executado'].includes(o.status));
+  }
+  if (!orcs.length) { lista.innerHTML = '<div class="empty" style="padding:2rem;"><p>Nenhum orçamento encontrado</p></div>'; return; }
+  const statusLabel = {rascunho:'Rascunho',enviado:'Enviado',aprovado:'Aprovado',recusado:'Recusado',executado:'Executado'};
+  lista.innerHTML = orcs.map(o => {
+    const adminBtns = MODO === 'admin' ? `
+      ${o.status === 'rascunho' ? `<button class="btn btn-secondary btn-sm" onclick="enviarOrcamento('${o.id}')">Enviar ao Cliente</button>` : ''}
+      ${o.status === 'aprovado' ? `<button class="btn btn-primary btn-sm" onclick="executarOrcamento('${o.id}')">Converter em OS</button>` : ''}
+      <button class="btn btn-secondary btn-sm" onclick="editarOrcamento('${o.id}')">Editar</button>
+      <button class="btn btn-danger btn-sm" onclick="excluirOrcamento('${o.id}')">×</button>` : '';
+    const clientBtns = MODO === 'client' && o.status === 'enviado' ? `
+      <button class="btn btn-primary btn-sm" onclick="aprovarOrcamento('${o.id}')">✅ Aprovar</button>
+      <button class="btn btn-danger btn-sm" onclick="recusarOrcamento('${o.id}')">❌ Recusar</button>` : '';
+    return `<div class="orc-card">
+      <div style="flex:1;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <span class="orc-num">${o.numero}</span>
+          <span class="orc-status orc-${o.status}">${statusLabel[o.status]||o.status}</span>
+        </div>
+        <div class="orc-titulo">${o.titulo}</div>
+        <div class="orc-cliente">${o.clientes?.nome || ''}</div>
+        ${o.validade ? `<div class="orc-data">Válido até: ${fmtDataSimples(o.validade)}</div>` : ''}
+      </div>
+      <div style="text-align:right;">
+        <div class="orc-valor">${fmtMoeda(o.valor_total)}</div>
+        <div class="orc-actions" style="margin-top:8px;justify-content:flex-end;">
+          <button class="btn btn-secondary btn-sm" onclick="verOrcamento('${o.id}')">Ver</button>
+          ${adminBtns}${clientBtns}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function fmtDataSimples(d) { if (!d) return ''; const [y,m,dd] = d.split('-'); return `${dd}/${m}/${y}`; }
+
+function abrirModalOrcamento() {
+  document.getElementById('orc-edit-id').value = '';
+  document.getElementById('orc-titulo').value = '';
+  document.getElementById('orc-descricao').value = '';
+  document.getElementById('orc-observacoes').value = '';
+  document.getElementById('orc-validade').value = '';
+  document.getElementById('orc-cliente-id').value = '';
+  document.getElementById('orc-itens-lista').innerHTML = '';
+  document.getElementById('orc-total-display').textContent = 'R$ 0,00';
+  document.getElementById('modal-orc-titulo').textContent = 'Novo Orçamento';
+  addItemOrcamento();
+  abrirModal('modal-orcamento');
+}
+
+async function editarOrcamento(id) {
+  const o = allOrcamentos.find(x => x.id === id);
+  if (!o) return;
+  document.getElementById('orc-edit-id').value = o.id;
+  document.getElementById('orc-titulo').value = o.titulo || '';
+  document.getElementById('orc-descricao').value = o.descricao || '';
+  document.getElementById('orc-observacoes').value = o.observacoes || '';
+  document.getElementById('orc-validade').value = o.validade || '';
+  document.getElementById('orc-cliente-id').value = o.cliente_id || '';
+  document.getElementById('orc-itens-lista').innerHTML = '';
+  const itens = o.itens ? JSON.parse(o.itens) : [];
+  if (itens.length) itens.forEach(i => addItemOrcamento(i.descricao, i.quantidade, i.valor_unit));
+  else addItemOrcamento();
+  calcularTotalOrcamento();
+  document.getElementById('modal-orc-titulo').textContent = 'Editar Orçamento';
+  abrirModal('modal-orcamento');
+}
+
+function addItemOrcamento(desc='', qtd='1', vlr='') {
+  const div = document.createElement('div');
+  div.className = 'item-orc-row';
+  div.innerHTML = `
+    <input type="text" placeholder="Descrição do serviço/peça" value="${desc}" oninput="calcularTotalOrcamento()"/>
+    <input type="number" placeholder="1" value="${qtd}" min="0" step="0.01" oninput="calcularTotalOrcamento()" style="text-align:center;"/>
+    <input type="number" placeholder="0,00" value="${vlr}" min="0" step="0.01" oninput="calcularTotalOrcamento()" style="text-align:right;"/>
+    <div class="item-orc-total">R$ 0,00</div>
+    <button onclick="this.parentElement.remove();calcularTotalOrcamento();" style="background:rgba(239,68,68,.15);color:var(--red);border:none;border-radius:6px;width:30px;height:30px;cursor:pointer;font-size:16px;">×</button>`;
+  document.getElementById('orc-itens-lista').appendChild(div);
+  if (vlr) calcularTotalOrcamento();
+}
+
+function calcularTotalOrcamento() {
+  let total = 0;
+  document.querySelectorAll('#orc-itens-lista .item-orc-row').forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    const qtd = parseFloat(inputs[1].value) || 0;
+    const vlr = parseFloat(inputs[2].value) || 0;
+    const sub = qtd * vlr;
+    row.querySelector('.item-orc-total').textContent = fmtMoeda(sub);
+    total += sub;
+  });
+  document.getElementById('orc-total-display').textContent = fmtMoeda(total);
+}
+
+function coletarItensOrcamento() {
+  const itens = [];
+  let total = 0;
+  document.querySelectorAll('#orc-itens-lista .item-orc-row').forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    const desc = inputs[0].value.trim();
+    const qtd  = parseFloat(inputs[1].value) || 0;
+    const vlr  = parseFloat(inputs[2].value) || 0;
+    if (desc) { itens.push({descricao:desc, quantidade:qtd, valor_unit:vlr, valor_total:qtd*vlr}); total += qtd*vlr; }
+  });
+  return { itens, total };
+}
+
+async function salvarOrcamento(statusParam) {
+  const id       = document.getElementById('orc-edit-id').value;
+  const clienteId = document.getElementById('orc-cliente-id').value;
+  const titulo   = document.getElementById('orc-titulo').value.trim();
+  if (!clienteId) { alert('Selecione o cliente.'); return; }
+  if (!titulo)    { alert('Informe o título do orçamento.'); return; }
+  const { itens, total } = coletarItensOrcamento();
+  const dados = {
+    cliente_id:  clienteId,
+    titulo,
+    descricao:   document.getElementById('orc-descricao').value,
+    observacoes: document.getElementById('orc-observacoes').value,
+    validade:    document.getElementById('orc-validade').value || null,
+    itens:       JSON.stringify(itens),
+    valor_total: total,
+    status:      statusParam
+  };
+  if (id) {
+    await sbFetch(`orcamentos?id=eq.${id}`, { method:'PATCH', body:JSON.stringify(dados) });
+  } else {
+    dados.numero = 'ORC-' + Date.now().toString().slice(-6);
+    await sbFetch('orcamentos', { method:'POST', body:JSON.stringify(dados) });
+  }
+  fecharModal('modal-orcamento');
+  await carregarOrcamentos();
+  renderizarOrcamentos();
+}
+
+async function enviarOrcamento(id) {
+  if (!confirm('Enviar este orçamento para o cliente?')) return;
+  await sbFetch(`orcamentos?id=eq.${id}`, { method:'PATCH', body:JSON.stringify({status:'enviado'}) });
+  await carregarOrcamentos(); renderizarOrcamentos();
+}
+
+async function aprovarOrcamento(id) {
+  if (!confirm('Aprovar este orçamento?')) return;
+  await sbFetch(`orcamentos?id=eq.${id}`, { method:'PATCH', body:JSON.stringify({status:'aprovado', aprovado_em:new Date().toISOString()}) });
+  await carregarOrcamentos(); renderizarOrcamentos();
+}
+
+async function recusarOrcamento(id) {
+  if (!confirm('Recusar este orçamento?')) return;
+  await sbFetch(`orcamentos?id=eq.${id}`, { method:'PATCH', body:JSON.stringify({status:'recusado'}) });
+  await carregarOrcamentos(); renderizarOrcamentos();
+}
+
+async function executarOrcamento(id) {
+  const o = allOrcamentos.find(x => x.id === id);
+  if (!o || !confirm('Converter este orçamento em Ordem de Serviço?')) return;
+  const osNum = gerarNumeroOS();
+  await sbFetch('ordens_servico', { method:'POST', body:JSON.stringify({
+    numero: osNum, cliente_id: o.cliente_id, problema: o.titulo,
+    diagnostico: o.descricao, status:'Em Andamento', prioridade:'Média',
+    tipo_servico:'Manutenção Corretiva', aberto_por:'Admin',
+    created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+  })});
+  await sbFetch(`orcamentos?id=eq.${id}`, { method:'PATCH', body:JSON.stringify({status:'executado', executado_em:new Date().toISOString(), os_numero:osNum}) });
+  await Promise.all([carregarOS(), carregarOrcamentos()]);
+  renderizarOrcamentos();
+  alert(`OS ${osNum} criada com sucesso!`);
+}
+
+async function excluirOrcamento(id) {
+  if (!confirm('Excluir este orçamento?')) return;
+  await sbFetch(`orcamentos?id=eq.${id}`, { method:'DELETE', prefer:'return=minimal' });
+  await carregarOrcamentos(); renderizarOrcamentos();
+}
+
+function verOrcamento(id) {
+  const o = allOrcamentos.find(x => x.id === id);
+  if (!o) return;
+  const itens = o.itens ? JSON.parse(o.itens) : [];
+  const cli = o.clientes?.nome || '';
+  const statusLabel = {rascunho:'Rascunho',enviado:'Enviado ao Cliente',aprovado:'Aprovado',recusado:'Recusado',executado:'Executado'};
+  document.getElementById('orc-detail-titulo').textContent = o.numero + ' — ' + o.titulo;
+  document.getElementById('orc-detail-body').innerHTML = `
+    <div style="margin-bottom:12px;">
+      <span class="orc-status orc-${o.status}">${statusLabel[o.status]||o.status}</span>
+      ${o.validade ? `<span style="margin-left:10px;font-size:12px;color:var(--text2);">Válido até ${fmtDataSimples(o.validade)}</span>` : ''}
+    </div>
+    <div class="report-section"><h3>Cliente</h3><p>${cli}</p></div>
+    ${o.descricao ? `<div class="report-section"><h3>Descrição</h3><p style="white-space:pre-wrap;">${o.descricao}</p></div>` : ''}
+    <div class="report-section">
+      <h3>Itens</h3>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead><tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:6px;text-align:left;">Descrição</th>
+          <th style="padding:6px;text-align:center;">Qtd</th>
+          <th style="padding:6px;text-align:right;">Vlr Unit</th>
+          <th style="padding:6px;text-align:right;">Total</th>
+        </tr></thead>
+        <tbody>${itens.map(i=>`<tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:6px;">${i.descricao}</td>
+          <td style="padding:6px;text-align:center;">${i.quantidade}</td>
+          <td style="padding:6px;text-align:right;">${fmtMoeda(i.valor_unit)}</td>
+          <td style="padding:6px;text-align:right;font-weight:700;">${fmtMoeda(i.valor_total)}</td>
+        </tr>`).join('')}</tbody>
+        <tfoot><tr><td colspan="3" style="padding:8px;text-align:right;font-weight:700;font-size:15px;">TOTAL</td>
+          <td style="padding:8px;text-align:right;font-weight:800;font-size:18px;color:var(--green);">${fmtMoeda(o.valor_total)}</td></tr></tfoot>
+      </table>
+    </div>
+    ${o.observacoes ? `<div class="report-section"><h3>Observações</h3><p style="white-space:pre-wrap;">${o.observacoes}</p></div>` : ''}
+    ${o.aprovado_em ? `<div style="font-size:12px;color:var(--green);margin-top:8px;">Aprovado em: ${fmtDate(o.aprovado_em)}</div>` : ''}
+    ${o.os_numero ? `<div style="font-size:12px;color:var(--purple);margin-top:4px;">OS gerada: ${o.os_numero}</div>` : ''}`;
+  const footer = document.getElementById('orc-detail-footer');
+  footer.innerHTML = `<button class="btn btn-secondary" onclick="fecharModal('modal-orc-detail')">Fechar</button>`;
+  if (MODO === 'admin' && o.status !== 'executado') footer.innerHTML += `<button class="btn btn-secondary" onclick="fecharModal('modal-orc-detail');editarOrcamento('${id}')">Editar</button>`;
+  if (MODO === 'client' && o.status === 'enviado') footer.innerHTML += `<button class="btn btn-primary" onclick="fecharModal('modal-orc-detail');aprovarOrcamento('${id}')">✅ Aprovar</button><button class="btn btn-danger" onclick="fecharModal('modal-orc-detail');recusarOrcamento('${id}')">❌ Recusar</button>`;
+  abrirModal('modal-orc-detail');
+}
+
+function imprimirOrcamento() { window.print(); }
+
+// ===== CONTRATOS =====
+function abrirModalContrato() {
+  document.getElementById('cont-edit-id').value = '';
+  document.getElementById('cont-titulo').value = '';
+  document.getElementById('cont-valor').value = '';
+  document.getElementById('cont-inicio').value = '';
+  document.getElementById('cont-fim').value = '';
+  document.getElementById('cont-especificacoes').value = '';
+  document.getElementById('cont-status').value = 'ativo';
+  document.getElementById('modal-cont-titulo').textContent = 'Novo Contrato';
+  abrirModal('modal-contrato');
+}
+
+async function editarContrato(id) {
+  const c = allContratos.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('cont-edit-id').value = c.id;
+  document.getElementById('cont-titulo').value = c.titulo || '';
+  document.getElementById('cont-valor').value = c.valor_mensal || '';
+  document.getElementById('cont-inicio').value = c.data_inicio || '';
+  document.getElementById('cont-fim').value = c.data_fim || '';
+  document.getElementById('cont-especificacoes').value = c.especificacoes || '';
+  document.getElementById('cont-status').value = c.status || 'ativo';
+  document.getElementById('cont-cliente-id').value = c.cliente_id || '';
+  document.getElementById('modal-cont-titulo').textContent = 'Editar Contrato';
+  abrirModal('modal-contrato');
+}
+
+async function salvarContrato() {
+  const id = document.getElementById('cont-edit-id').value;
+  const titulo = document.getElementById('cont-titulo').value.trim();
+  const valor  = parseFloat(document.getElementById('cont-valor').value) || 0;
+  const clienteId = document.getElementById('cont-cliente-id').value;
+  if (!titulo) { alert('Informe o título do contrato.'); return; }
+  const dados = {
+    cliente_id: clienteId || null, titulo, valor_mensal: valor,
+    data_inicio: document.getElementById('cont-inicio').value || null,
+    data_fim:    document.getElementById('cont-fim').value || null,
+    especificacoes: document.getElementById('cont-especificacoes').value,
+    status: document.getElementById('cont-status').value
+  };
+  if (id) await sbFetch(`contratos?id=eq.${id}`, { method:'PATCH', body:JSON.stringify(dados) });
+  else    await sbFetch('contratos', { method:'POST', body:JSON.stringify(dados) });
+  fecharModal('modal-contrato');
+  await carregarContratos(); renderizarContratos(); renderizarFaturamento();
+}
+
+async function excluirContrato(id) {
+  if (!confirm('Excluir este contrato?')) return;
+  await sbFetch(`contratos?id=eq.${id}`, { method:'DELETE', prefer:'return=minimal' });
+  await carregarContratos(); renderizarContratos(); renderizarFaturamento();
+}
+
+function renderizarContratos() {
+  const lista = document.getElementById('contratos-lista');
+  if (!lista) return;
+  if (!allContratos.length) { lista.innerHTML = '<div class="empty" style="padding:1.5rem;"><p>Nenhum contrato cadastrado</p></div>'; return; }
+  const stLbl = { ativo:'Ativo', pausado:'Pausado', encerrado:'Encerrado' };
+  lista.innerHTML = allContratos.map(c => `
+    <div class="contrato-card ${c.status !== 'ativo' ? c.status : ''}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <div>
+          <div style="font-size:15px;font-weight:700;margin-bottom:4px;">${c.titulo}</div>
+          ${c.clientes?.nome ? `<div style="font-size:12px;color:var(--text2);">Cliente: ${c.clientes.nome}</div>` : ''}
+          ${c.data_inicio ? `<div style="font-size:12px;color:var(--text3);">${fmtDataSimples(c.data_inicio)}${c.data_fim ? ' → ' + fmtDataSimples(c.data_fim) : ''}</div>` : ''}
+          ${c.especificacoes ? `<div style="font-size:12px;color:var(--text2);margin-top:4px;">${c.especificacoes.slice(0,120)}${c.especificacoes.length>120?'...':''}</div>` : ''}
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:18px;font-weight:800;color:var(--green);font-family:monospace;">${fmtMoeda(c.valor_mensal)}<span style="font-size:11px;color:var(--text3);font-weight:400;">/mês</span></div>
+          <span class="badge ${c.status==='ativo'?'badge-done':c.status==='pausado'?'badge-progress':'badge-waiting'}" style="margin-top:4px;">${stLbl[c.status]||c.status}</span>
+          <div style="display:flex;gap:4px;margin-top:8px;justify-content:flex-end;">
+            <button class="btn btn-secondary btn-sm" onclick="editarContrato('${c.id}')">Editar</button>
+            <button class="btn btn-danger btn-sm" onclick="excluirContrato('${c.id}')">×</button>
+          </div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ===== FATURAMENTO =====
+function iniciarFaturamento() {
+  const sel = document.getElementById('fat-ano');
+  if (!sel) return;
+  const ano = new Date().getFullYear();
+  sel.innerHTML = [ano-1, ano, ano+1].map(a => `<option value="${a}" ${a===ano?'selected':''}>${a}</option>`).join('');
+  document.getElementById('fat-mes').value = new Date().getMonth();
+}
+
+function renderizarFaturamento() {
+  const mes = parseInt(document.getElementById('fat-mes')?.value ?? new Date().getMonth());
+  const ano = parseInt(document.getElementById('fat-ano')?.value ?? new Date().getFullYear());
+
+  // Orçamentos executados no mês
+  const orcsDoMes = allOrcamentos.filter(o => {
+    if (o.status !== 'executado' || !o.executado_em) return false;
+    const d = new Date(o.executado_em);
+    return d.getMonth() === mes && d.getFullYear() === ano;
+  });
+  const totalOrcs = orcsDoMes.reduce((s,o) => s + Number(o.valor_total||0), 0);
+
+  // Contratos ativos
+  const contrAtivos = allContratos.filter(c => c.status === 'ativo');
+  const totalCont = contrAtivos.reduce((s,c) => s + Number(c.valor_mensal||0), 0);
+
+  const totalGeral = totalOrcs + totalCont;
+
+  document.getElementById('fat-val-orc').textContent   = fmtMoeda(totalOrcs);
+  document.getElementById('fat-val-cont').textContent  = fmtMoeda(totalCont);
+  document.getElementById('fat-val-total').textContent = fmtMoeda(totalGeral);
+
+  // Lista orçamentos executados no mês
+  const fatOrc = document.getElementById('fat-orc-lista');
+  if (fatOrc) {
+    if (!orcsDoMes.length) { fatOrc.innerHTML = '<div class="empty" style="padding:1.5rem;"><p>Nenhum orçamento executado neste mês</p></div>'; }
+    else {
+      fatOrc.innerHTML = orcsDoMes.map(o => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px;">
+          <div>
+            <span class="orc-num">${o.numero}</span>
+            <span style="margin-left:8px;font-size:13px;">${o.titulo}</span>
+            <span style="margin-left:8px;font-size:12px;color:var(--text2);">${o.clientes?.nome||''}</span>
+          </div>
+          <span style="font-weight:700;color:var(--green);font-family:monospace;">${fmtMoeda(o.valor_total)}</span>
+        </div>`).join('');
+    }
+  }
+  renderizarContratos();
+}
+
 // ===== UPLOAD DE FOTOS =====
 let fotosAtuais = []; // array de URLs já salvas
 let fotosNovas  = []; // arquivos File ainda não enviados
@@ -2245,6 +2839,8 @@ function showTab(tab) {
   document.getElementById('tab-' + tab).classList.add('active');
   document.getElementById('nav-' + tab).classList.add('active');
   if (tab === 'agenda') { renderCalendario(); renderListaVisitas(); }
+  if (tab === 'orcamentos') { renderizarOrcamentos(); }
+  if (tab === 'faturamento') { renderizarFaturamento(); renderizarContratos(); }
 }
 
 function abrirModal(id) { document.getElementById(id).classList.add('open'); }
