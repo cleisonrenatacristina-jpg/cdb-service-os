@@ -220,6 +220,27 @@
   .btn-edit-v { background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 7px 12px; border-radius: var(--radius); cursor: pointer; font-size: 12px; }
   .btn-del-v { background: rgba(239,68,68,0.1); color: var(--red); border: 1px solid rgba(239,68,68,0.2); padding: 7px 10px; border-radius: var(--radius); cursor: pointer; font-size: 12px; }
   @media(max-width:700px) { .cal-cell { min-height: 48px; } .cal-ponto { display: none; } }
+
+  /* BANNER DE ALERTA DE VISITA */
+  .alerta-visita-wrap { margin-bottom: 1.25rem; }
+  .alerta-visita {
+    background: linear-gradient(135deg, rgba(30,58,138,0.25), rgba(15,17,23,0.8));
+    border: 1.5px solid var(--orange);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.25rem;
+    display: flex; align-items: flex-start; gap: 14px;
+    animation: pulso 2.5s ease-in-out infinite;
+  }
+  @keyframes pulso {
+    0%,100% { box-shadow: 0 0 0 0 rgba(30,58,138,0); border-color: var(--orange); }
+    50%      { box-shadow: 0 0 18px 4px rgba(59,130,246,0.25); border-color: #3b82f6; }
+  }
+  .alerta-icone { font-size: 28px; flex-shrink: 0; }
+  .alerta-titulo { font-size: 13px; font-weight: 800; color: #93c5fd; letter-spacing: 0.3px; margin-bottom: 4px; }
+  .alerta-linha { font-size: 13px; color: var(--text); margin-bottom: 2px; }
+  .alerta-equip { font-size: 12px; color: var(--text2); margin-top: 4px; }
+  .alerta-hoje { background: rgba(234,179,8,0.08); border-color: var(--yellow); }
+  .alerta-hoje .alerta-titulo { color: var(--yellow); }
 </style>
 </head>
 <body>
@@ -456,6 +477,9 @@
           <button class="btn btn-primary admin-only" onclick="abrirModalVisita()">+ Nova Visita</button>
         </div>
       </div>
+
+      <!-- Banner de alertas -->
+      <div id="alertas-visita-wrap" class="alerta-visita-wrap" style="display:none;"></div>
 
       <!-- Calendário mensal -->
       <div class="cal-wrapper">
@@ -1048,6 +1072,7 @@ function inicializarApp(clienteData) {
 
   carregarTudo();
   setTimeout(verificarAlertasMateriais, 2000);
+  setTimeout(mostrarAlertasVisita, 3000);
 }
 
 // ===== DADOS =====
@@ -1825,6 +1850,10 @@ function renderCalendario() {
   const filtCliente = document.getElementById('agenda-filtro-cliente')?.value || '';
   let visitasFiltradas = allVisitas;
   if (filtCliente) visitasFiltradas = visitasFiltradas.filter(v => v.cliente_id === filtCliente);
+  if (MODO === 'client' && CLIENT_ID) visitasFiltradas = visitasFiltradas.filter(v => v.cliente_id === CLIENT_ID);
+
+  const statusClass = { agendada: 'ag', em_andamento: 'em', concluida: 'co', cancelada: 'ca' };
+  const statusIcon  = { agendada: '📅', em_andamento: '🔧', concluida: '✅', cancelada: '❌' };
 
   let html = '';
   for (let i = 0; i < inicioSemana; i++) html += '<div class="cal-cell vazio"></div>';
@@ -1833,14 +1862,71 @@ function renderCalendario() {
     const vs = visitasFiltradas.filter(v => v.data_visita === dataStr);
     const isHoje = d === hoje.getDate() && calMes === hoje.getMonth() && calAno === hoje.getFullYear();
     const isSel = calDataFiltro === dataStr;
-    const statusClass = { agendada: 'ag', em_andamento: 'em', concluida: 'co', cancelada: 'ca' };
+
+    const pontosHtml = vs.slice(0, 2).map(v => {
+      const hora  = v.hora_prevista ? v.hora_prevista.slice(0,5) : '';
+      const nome  = v.clientes?.nome || '';
+      const tec   = v.tecnico ? v.tecnico.split(' ')[0] : '';
+      const equip = v.equipamentos?.nome || '';
+      const ic    = statusIcon[v.status] || '📅';
+      const sc    = statusClass[v.status] || 'ag';
+      return `<div class="cal-ponto ${sc}" title="Visita do Técnico ${tec} às ${hora} — ${equip}">
+        ${ic} ${nome ? nome.split(' ')[0] : 'Cliente'}${hora ? ' · ' + hora : ''}
+      </div>`;
+    }).join('');
+
+    const mais = vs.length > 2 ? `<div style="font-size:9px;color:var(--text3);padding:1px 3px;">+${vs.length - 2} visita(s)</div>` : '';
+
     html += `<div class="cal-cell${isHoje ? ' hoje' : ''}${isSel ? ' selecionado' : ''}" onclick="selecionarDia('${dataStr}')">
       <span class="cal-num">${d}</span>
-      ${vs.slice(0, 3).map(v => `<div class="cal-ponto ${statusClass[v.status] || 'ag'}" title="${v.clientes?.nome || ''}">${v.hora_prevista ? v.hora_prevista.slice(0,5) + ' ' : ''}${(v.clientes?.nome || '').split(' ')[0]}</div>`).join('')}
-      ${vs.length > 3 ? `<div style="font-size:9px;color:var(--text3);">+${vs.length - 3} mais</div>` : ''}
+      ${pontosHtml}${mais}
     </div>`;
   }
   grid.innerHTML = html;
+  mostrarAlertasVisita();
+}
+
+function mostrarAlertasVisita() {
+  const wrap = document.getElementById('alertas-visita-wrap');
+  if (!wrap) return;
+
+  const hoje = new Date();
+  const hojeStr = hoje.getFullYear() + '-' + String(hoje.getMonth()+1).padStart(2,'0') + '-' + String(hoje.getDate()).padStart(2,'0');
+  const amanha = new Date(hoje); amanha.setDate(amanha.getDate()+1);
+  const amanhaStr = amanha.getFullYear() + '-' + String(amanha.getMonth()+1).padStart(2,'0') + '-' + String(amanha.getDate()).padStart(2,'0');
+
+  let vs = allVisitas;
+  if (MODO === 'client' && CLIENT_ID) vs = vs.filter(v => v.cliente_id === CLIENT_ID);
+
+  const visitasHoje   = vs.filter(v => v.data_visita === hojeStr   && v.status !== 'cancelada');
+  const visitasAmanha = vs.filter(v => v.data_visita === amanhaStr && v.status !== 'cancelada');
+  const todasAlertas  = [...visitasHoje, ...visitasAmanha];
+
+  if (!todasAlertas.length) { wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
+
+  wrap.style.display = 'block';
+  wrap.innerHTML = todasAlertas.map(v => {
+    const isHoje   = v.data_visita === hojeStr;
+    const quando   = isHoje ? '🔴 HOJE' : '🟡 AMANHÃ';
+    const hora     = v.hora_prevista ? ' às ' + v.hora_prevista.slice(0,5) : '';
+    const tec      = v.tecnico || 'Técnico';
+    const cliente  = v.clientes?.nome || 'Cliente';
+    const equip    = v.equipamentos?.nome || '';
+    const modelo   = v.equipamentos?.modelo || '';
+    const obs      = v.observacoes || '';
+    const equipTxt = equip ? `🔧 Equipamento: <strong>${equip}${modelo ? ' — ' + modelo : ''}</strong>` : '';
+    const obsTxt   = obs   ? `📝 ${obs}` : '';
+    return `<div class="alerta-visita${isHoje ? ' alerta-hoje' : ''}">
+      <div class="alerta-icone">${isHoje ? '🚨' : '📢'}</div>
+      <div style="flex:1;">
+        <div class="alerta-titulo">${quando} — VISITA AGENDADA</div>
+        <div class="alerta-linha"><strong>👷 Técnico:</strong> ${tec}${hora}</div>
+        ${MODO === 'admin' ? `<div class="alerta-linha"><strong>🏢 Cliente:</strong> ${cliente}</div>` : ''}
+        ${equipTxt ? `<div class="alerta-equip">${equipTxt}</div>` : ''}
+        ${obsTxt   ? `<div class="alerta-equip">${obsTxt}</div>`   : ''}
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function selecionarDia(dataStr) {
