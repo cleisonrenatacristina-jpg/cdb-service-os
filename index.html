@@ -172,6 +172,54 @@
   .inner-tab.active { color: var(--orange); border-bottom-color: var(--orange); }
 
   select { background: var(--bg3) !important; }
+
+  /* AGENDA DE VISITAS */
+  .cal-wrapper { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1.5rem; }
+  .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .cal-nav h3 { font-size: 1rem; font-weight: 600; text-transform: capitalize; }
+  .cal-nav button { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 6px 14px; border-radius: var(--radius); cursor: pointer; font-size: 15px; }
+  .cal-nav button:hover { background: var(--bg3); }
+  .cal-dias-semana { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 4px; }
+  .cal-dias-semana span { text-align: center; padding: 6px; font-size: 11px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .cal-cell { min-height: 72px; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 5px; cursor: pointer; transition: background 0.15s; overflow: hidden; }
+  .cal-cell:hover { background: var(--surface); }
+  .cal-cell.vazio { background: transparent; border-color: transparent; cursor: default; pointer-events: none; }
+  .cal-cell.hoje { border-color: var(--orange); }
+  .cal-num { font-size: 12px; font-weight: 600; color: var(--text2); display: block; margin-bottom: 3px; }
+  .cal-cell.hoje .cal-num { color: var(--orange); font-weight: 800; }
+  .cal-cell.selecionado { background: var(--surface); border-color: var(--orange2); }
+  .cal-ponto { font-size: 10px; padding: 2px 5px; border-radius: 3px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cal-ponto.ag { background: rgba(30,58,138,0.4); color: #93c5fd; }
+  .cal-ponto.em { background: rgba(234,179,8,0.25); color: var(--yellow); }
+  .cal-ponto.co { background: rgba(34,197,94,0.2); color: var(--green); }
+  .cal-ponto.ca { background: var(--surface); color: var(--text3); }
+  .visita-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 10px; border-left: 4px solid var(--orange); }
+  .visita-card.em_andamento { border-left-color: var(--yellow); }
+  .visita-card.concluida { border-left-color: var(--green); }
+  .visita-card.cancelada { border-left-color: var(--text3); }
+  .visita-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; flex-wrap: wrap; gap: 6px; }
+  .visita-data-txt { font-size: 12px; color: var(--text2); }
+  .visita-badge { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .visita-badge.agendada { background: rgba(30,58,138,0.2); color: #93c5fd; }
+  .visita-badge.em_andamento { background: rgba(234,179,8,0.15); color: var(--yellow); }
+  .visita-badge.concluida { background: rgba(34,197,94,0.15); color: var(--green); }
+  .visita-badge.cancelada { background: rgba(139,144,168,0.15); color: var(--text3); }
+  .visita-cliente-nome { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+  .visita-equip-nome { font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+  .visita-horarios { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 6px; }
+  .visita-hora-item { font-size: 12px; color: var(--text2); }
+  .visita-hora-item.chegada { color: var(--green); font-weight: 600; }
+  .visita-hora-item.saida { color: var(--red); font-weight: 600; }
+  .visita-obs-txt { font-size: 12px; color: var(--text3); font-style: italic; margin-top: 4px; }
+  .visita-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .btn-checkin { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); padding: 7px 14px; border-radius: var(--radius); cursor: pointer; font-size: 12px; font-weight: 600; }
+  .btn-checkin:hover { background: rgba(34,197,94,0.25); }
+  .btn-checkout { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); padding: 7px 14px; border-radius: var(--radius); cursor: pointer; font-size: 12px; font-weight: 600; }
+  .btn-checkout:hover { background: rgba(239,68,68,0.25); }
+  .btn-edit-v { background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 7px 12px; border-radius: var(--radius); cursor: pointer; font-size: 12px; }
+  .btn-del-v { background: rgba(239,68,68,0.1); color: var(--red); border: 1px solid rgba(239,68,68,0.2); padding: 7px 10px; border-radius: var(--radius); cursor: pointer; font-size: 12px; }
+  @media(max-width:700px) { .cal-cell { min-height: 48px; } .cal-ponto { display: none; } }
 </style>
 </head>
 <body>
@@ -250,6 +298,7 @@
       <button onclick="showTab('materiais')" id="nav-materiais"><span>Materiais para Compra</span></button>
       <button onclick="showTab('equipamentos')" id="nav-equipamentos" class="admin-only"><span>Equipamentos</span></button>
       <button onclick="showTab('clientes')" id="nav-clientes" class="admin-only"><span>Clientes</span></button>
+      <button onclick="showTab('agenda')" id="nav-agenda"><span>📅 Agenda</span></button>
     </nav>
     <div class="header-right">
       <span class="user-badge" id="user-badge"></span>
@@ -394,6 +443,42 @@
         <button class="btn btn-primary" onclick="abrirModalCliente()">+ Cadastrar Cliente</button>
       </div>
       <div id="clientes-grid" class="grid-3"></div>
+    </div>
+
+    <!-- AGENDA -->
+    <div id="tab-agenda" class="tab-content">
+      <div class="section-header">
+        <h2>📅 Agenda de Visitas</h2>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select id="agenda-filtro-cliente" onchange="renderListaVisitas()" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px 12px;font-size:13px;outline:none;" class="admin-only">
+            <option value="">Todos os clientes</option>
+          </select>
+          <button class="btn btn-primary admin-only" onclick="abrirModalVisita()">+ Nova Visita</button>
+        </div>
+      </div>
+
+      <!-- Calendário mensal -->
+      <div class="cal-wrapper">
+        <div class="cal-nav">
+          <button onclick="mesAnterior()">&#9664;</button>
+          <h3 id="cal-mes-titulo">—</h3>
+          <button onclick="mesSeguinte()">&#9654;</button>
+        </div>
+        <div class="cal-dias-semana">
+          <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+        </div>
+        <div id="cal-grid" class="cal-grid"></div>
+      </div>
+
+      <!-- Filtro de data e lista -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px;">
+        <h3 style="font-size:14px;color:var(--text2);" id="agenda-lista-titulo">Todas as visitas</h3>
+        <div style="display:flex;gap:8px;">
+          <input type="date" id="agenda-filtro-data" onchange="renderListaVisitas()" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px 12px;font-size:13px;outline:none;"/>
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('agenda-filtro-data').value='';renderListaVisitas()">Limpar</button>
+        </div>
+      </div>
+      <div id="agenda-lista"></div>
     </div>
   </main>
 </div>
@@ -680,12 +765,62 @@
   </div>
 </div>
 
+<!-- MODAL: VISITA AGENDADA -->
+<div class="modal-overlay" id="modal-visita">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-visita-titulo">📅 Agendar Visita</h2>
+      <button class="close-btn" onclick="fecharModal('modal-visita')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="grid-2">
+        <div class="field">
+          <label>Cliente <span style="color:var(--red);">*</span></label>
+          <select id="visita-cliente-id" onchange="carregarEquipsVisita(this.value)">
+            <option value="">Selecione o cliente...</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Equipamento a atuar</label>
+          <select id="visita-equipamento-id">
+            <option value="">Selecione após escolher o cliente</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label>Data da Visita <span style="color:var(--red);">*</span></label>
+          <input id="visita-data" type="date"/>
+        </div>
+        <div class="field">
+          <label>Hora Prevista</label>
+          <input id="visita-hora" type="time" placeholder="08:00"/>
+        </div>
+      </div>
+      <div class="field">
+        <label>Técnico Responsável</label>
+        <input id="visita-tecnico" type="text" placeholder="Nome do técnico"/>
+      </div>
+      <div class="field">
+        <label>Observações / Objetivo da visita</label>
+        <textarea id="visita-obs" placeholder="Descreva o objetivo desta visita, o que será feito, etc." style="min-height:80px;"></textarea>
+      </div>
+      <input type="hidden" id="visita-edit-id"/>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="fecharModal('modal-visita')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarVisita()">Salvar Visita</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ===== ESTADO GLOBAL =====
 let SB_URL = '', SB_KEY = '', MODO = 'admin', CLIENT_CODE = '', CLIENT_ID = null;
-let allOS = [], allClientes = [], allEquipamentos = [], allMateriais = [];
+let allOS = [], allClientes = [], allEquipamentos = [], allMateriais = [], allVisitas = [];
 let osSendoEditada = null;
 const ADMIN_PASS = 'cdb2024';
+let calMes = new Date().getMonth(), calAno = new Date().getFullYear(), calDataFiltro = null;
 
 const SQL_SETUP = `-- CDB Service OS: Execute no SQL Editor do Supabase
 
@@ -744,6 +879,20 @@ create table if not exists materiais_necessarios (
   created_at timestamptz default now()
 );
 
+create table if not exists visitas (
+  id uuid default gen_random_uuid() primary key,
+  cliente_id uuid references clientes(id) on delete cascade,
+  equipamento_id uuid references equipamentos(id) on delete set null,
+  data_visita date not null,
+  hora_prevista time,
+  hora_chegada timestamptz,
+  hora_saida timestamptz,
+  status text default 'agendada',
+  tecnico text,
+  observacoes text,
+  created_at timestamptz default now()
+);
+
 -- Sequence para numerar OS
 create sequence if not exists os_seq start 1;
 
@@ -752,6 +901,7 @@ alter table clientes enable row level security;
 alter table equipamentos enable row level security;
 alter table ordens_servico enable row level security;
 alter table materiais_necessarios enable row level security;
+alter table visitas enable row level security;
 
 -- Políticas: permitir tudo com anon key (você controla via código)
 do $$ begin
@@ -766,6 +916,9 @@ do $$ begin
   end if;
   if not exists (select 1 from pg_policies where tablename='materiais_necessarios' and policyname='allow_all_materiais') then
     create policy allow_all_materiais on materiais_necessarios for all using (true) with check (true);
+  end if;
+  if not exists (select 1 from pg_policies where tablename='visitas' and policyname='allow_all_visitas') then
+    create policy allow_all_visitas on visitas for all using (true) with check (true);
   end if;
 end $$;
 `;
@@ -899,7 +1052,7 @@ function inicializarApp(clienteData) {
 
 // ===== DADOS =====
 async function carregarTudo() {
-  await Promise.all([carregarClientes(), carregarEquipamentos(), carregarOS(), carregarMateriais()]);
+  await Promise.all([carregarClientes(), carregarEquipamentos(), carregarOS(), carregarMateriais(), carregarVisitas()]);
   carregarDashboard();
   popularSelects();
 }
@@ -934,7 +1087,7 @@ async function carregarMateriais() {
 // ===== POPULARIZAR SELECTS =====
 function popularSelects() {
   // Selects de cliente nos modais
-  const selects = ['os-cliente-id', 'mat-cliente', 'equip-cliente-id', 'equip-filter-cliente', 'os-filter-cliente', 'dashboard-client-filter'];
+  const selects = ['os-cliente-id', 'mat-cliente', 'equip-cliente-id', 'equip-filter-cliente', 'os-filter-cliente', 'dashboard-client-filter', 'agenda-filtro-cliente', 'visita-cliente-id'];
   selects.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -1644,12 +1797,214 @@ async function excluirCliente(id) {
   await carregarClientes();
 }
 
+// ===== AGENDA DE VISITAS =====
+async function carregarVisitas() {
+  let q = 'visitas?select=*,clientes(id,nome),equipamentos(id,nome,modelo)&order=data_visita.asc,hora_prevista.asc';
+  if (MODO === 'client' && CLIENT_ID) q += `&cliente_id=eq.${CLIENT_ID}`;
+  allVisitas = await sbFetch(q) || [];
+  renderCalendario();
+  renderListaVisitas();
+}
+
+function renderCalendario() {
+  const grid = document.getElementById('cal-grid');
+  const titulo = document.getElementById('cal-mes-titulo');
+  if (!grid) return;
+  const primeiroDia = new Date(calAno, calMes, 1);
+  const diasNoMes = new Date(calAno, calMes + 1, 0).getDate();
+  const inicioSemana = primeiroDia.getDay();
+  const hoje = new Date();
+  const nomesMes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  titulo.textContent = nomesMes[calMes] + ' ' + calAno;
+
+  const filtCliente = document.getElementById('agenda-filtro-cliente')?.value || '';
+  let visitasFiltradas = allVisitas;
+  if (filtCliente) visitasFiltradas = visitasFiltradas.filter(v => v.cliente_id === filtCliente);
+
+  let html = '';
+  for (let i = 0; i < inicioSemana; i++) html += '<div class="cal-cell vazio"></div>';
+  for (let d = 1; d <= diasNoMes; d++) {
+    const dataStr = calAno + '-' + String(calMes + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    const vs = visitasFiltradas.filter(v => v.data_visita === dataStr);
+    const isHoje = d === hoje.getDate() && calMes === hoje.getMonth() && calAno === hoje.getFullYear();
+    const isSel = calDataFiltro === dataStr;
+    const statusClass = { agendada: 'ag', em_andamento: 'em', concluida: 'co', cancelada: 'ca' };
+    html += `<div class="cal-cell${isHoje ? ' hoje' : ''}${isSel ? ' selecionado' : ''}" onclick="selecionarDia('${dataStr}')">
+      <span class="cal-num">${d}</span>
+      ${vs.slice(0, 3).map(v => `<div class="cal-ponto ${statusClass[v.status] || 'ag'}" title="${v.clientes?.nome || ''}">${v.hora_prevista ? v.hora_prevista.slice(0,5) + ' ' : ''}${(v.clientes?.nome || '').split(' ')[0]}</div>`).join('')}
+      ${vs.length > 3 ? `<div style="font-size:9px;color:var(--text3);">+${vs.length - 3} mais</div>` : ''}
+    </div>`;
+  }
+  grid.innerHTML = html;
+}
+
+function selecionarDia(dataStr) {
+  calDataFiltro = calDataFiltro === dataStr ? null : dataStr;
+  document.getElementById('agenda-filtro-data').value = calDataFiltro || '';
+  renderCalendario();
+  renderListaVisitas();
+}
+
+function mesAnterior() {
+  calMes--; if (calMes < 0) { calMes = 11; calAno--; }
+  renderCalendario();
+}
+
+function mesSeguinte() {
+  calMes++; if (calMes > 11) { calMes = 0; calAno++; }
+  renderCalendario();
+}
+
+function renderListaVisitas() {
+  const lista = document.getElementById('agenda-lista');
+  const titulo = document.getElementById('agenda-lista-titulo');
+  if (!lista) return;
+
+  const filtData = document.getElementById('agenda-filtro-data')?.value || calDataFiltro || '';
+  const filtCliente = document.getElementById('agenda-filtro-cliente')?.value || '';
+
+  let vs = allVisitas;
+  if (filtData) vs = vs.filter(v => v.data_visita === filtData);
+  if (filtCliente) vs = vs.filter(v => v.cliente_id === filtCliente);
+  if (MODO === 'client' && CLIENT_ID) vs = vs.filter(v => v.cliente_id === CLIENT_ID);
+
+  if (filtData) {
+    const [y, m, d] = filtData.split('-');
+    titulo.textContent = `Visitas em ${d}/${m}/${y}`;
+  } else if (filtCliente) {
+    const cli = allClientes.find(c => c.id === filtCliente);
+    titulo.textContent = `Visitas — ${cli?.nome || ''}`;
+  } else {
+    titulo.textContent = 'Todas as visitas';
+  }
+
+  if (!vs.length) {
+    lista.innerHTML = '<div class="empty" style="padding:2rem;"><p>Nenhuma visita encontrada</p></div>';
+    return;
+  }
+
+  const statusLabel = { agendada: 'Agendada', em_andamento: 'Em Andamento', concluida: 'Concluída', cancelada: 'Cancelada' };
+
+  lista.innerHTML = vs.map(v => {
+    const [y, m, d] = v.data_visita.split('-');
+    const dataTxt = `${d}/${m}/${y}`;
+    const equip = v.equipamentos ? `🔧 ${v.equipamentos.nome}${v.equipamentos.modelo ? ' — ' + v.equipamentos.modelo : ''}` : '';
+    const chegada = v.hora_chegada ? `<span class="visita-hora-item chegada">✅ Chegou: ${fmtHora(v.hora_chegada)}</span>` : '';
+    const saida = v.hora_saida ? `<span class="visita-hora-item saida">🏁 Saiu: ${fmtHora(v.hora_saida)}</span>` : '';
+    const prevista = v.hora_prevista ? `<span class="visita-hora-item">⏰ Previsto: ${v.hora_prevista.slice(0,5)}</span>` : '';
+    const tecnico = v.tecnico ? `<span class="visita-hora-item">👷 ${v.tecnico}</span>` : '';
+    const adminBtns = MODO === 'admin' ? `
+      <div class="visita-actions">
+        ${v.status === 'agendada' ? `<button class="btn-checkin" onclick="checkInVisita('${v.id}')">✅ Marcar Chegada</button>` : ''}
+        ${v.status === 'em_andamento' ? `<button class="btn-checkout" onclick="checkOutVisita('${v.id}')">🏁 Marcar Saída</button>` : ''}
+        <button class="btn-edit-v" onclick="editarVisita('${v.id}')">✏️ Editar</button>
+        <button class="btn-del-v" onclick="excluirVisita('${v.id}')">🗑️</button>
+      </div>` : '';
+    return `<div class="visita-card ${v.status}">
+      <div class="visita-top">
+        <span class="visita-data-txt">📅 ${dataTxt}</span>
+        <span class="visita-badge ${v.status}">${statusLabel[v.status] || v.status}</span>
+      </div>
+      <div class="visita-cliente-nome">${v.clientes?.nome || '—'}</div>
+      ${equip ? `<div class="visita-equip-nome">${equip}</div>` : ''}
+      <div class="visita-horarios">${prevista}${chegada}${saida}${tecnico}</div>
+      ${v.observacoes ? `<div class="visita-obs-txt">${v.observacoes}</div>` : ''}
+      ${adminBtns}
+    </div>`;
+  }).join('');
+}
+
+function fmtHora(ts) {
+  if (!ts) return '';
+  return new Date(ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function abrirModalVisita() {
+  document.getElementById('visita-edit-id').value = '';
+  document.getElementById('visita-cliente-id').value = '';
+  document.getElementById('visita-equipamento-id').innerHTML = '<option value="">Selecione após escolher o cliente</option>';
+  document.getElementById('visita-data').value = '';
+  document.getElementById('visita-hora').value = '';
+  document.getElementById('visita-tecnico').value = '';
+  document.getElementById('visita-obs').value = '';
+  document.getElementById('modal-visita-titulo').textContent = '📅 Agendar Visita';
+  abrirModal('modal-visita');
+}
+
+async function editarVisita(id) {
+  const v = allVisitas.find(x => x.id === id);
+  if (!v) return;
+  document.getElementById('visita-edit-id').value = v.id;
+  document.getElementById('visita-cliente-id').value = v.cliente_id || '';
+  await carregarEquipsVisita(v.cliente_id);
+  document.getElementById('visita-equipamento-id').value = v.equipamento_id || '';
+  document.getElementById('visita-data').value = v.data_visita || '';
+  document.getElementById('visita-hora').value = v.hora_prevista ? v.hora_prevista.slice(0,5) : '';
+  document.getElementById('visita-tecnico').value = v.tecnico || '';
+  document.getElementById('visita-obs').value = v.observacoes || '';
+  document.getElementById('modal-visita-titulo').textContent = '✏️ Editar Visita';
+  abrirModal('modal-visita');
+}
+
+async function carregarEquipsVisita(clienteId) {
+  const sel = document.getElementById('visita-equipamento-id');
+  sel.innerHTML = '<option value="">Sem equipamento específico</option>';
+  if (!clienteId) return;
+  const equips = await sbFetch(`equipamentos?cliente_id=eq.${clienteId}&order=nome.asc`);
+  if (equips) equips.forEach(e => {
+    sel.innerHTML += `<option value="${e.id}">${e.nome}${e.modelo ? ' — ' + e.modelo : ''}</option>`;
+  });
+}
+
+async function salvarVisita() {
+  const id = document.getElementById('visita-edit-id').value;
+  const clienteId = document.getElementById('visita-cliente-id').value;
+  const data = document.getElementById('visita-data').value;
+  if (!clienteId || !data) { alert('Cliente e data são obrigatórios.'); return; }
+  const equipId = document.getElementById('visita-equipamento-id').value;
+  const dados = {
+    cliente_id: clienteId,
+    equipamento_id: equipId || null,
+    data_visita: data,
+    hora_prevista: document.getElementById('visita-hora').value || null,
+    tecnico: document.getElementById('visita-tecnico').value || null,
+    observacoes: document.getElementById('visita-obs').value || null,
+  };
+  if (id) {
+    await sbFetch(`visitas?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(dados) });
+  } else {
+    dados.status = 'agendada';
+    await sbFetch('visitas', { method: 'POST', body: JSON.stringify(dados) });
+  }
+  fecharModal('modal-visita');
+  await carregarVisitas();
+}
+
+async function checkInVisita(id) {
+  if (!confirm('Confirmar chegada ao cliente agora?')) return;
+  await sbFetch(`visitas?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify({ hora_chegada: new Date().toISOString(), status: 'em_andamento' }) });
+  await carregarVisitas();
+}
+
+async function checkOutVisita(id) {
+  if (!confirm('Confirmar saída do cliente agora?')) return;
+  await sbFetch(`visitas?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify({ hora_saida: new Date().toISOString(), status: 'concluida' }) });
+  await carregarVisitas();
+}
+
+async function excluirVisita(id) {
+  if (!confirm('Excluir esta visita agendada?')) return;
+  await sbFetch(`visitas?id=eq.${id}`, { method: 'DELETE', prefer: 'return=minimal' });
+  await carregarVisitas();
+}
+
 // ===== NAVEGAÇÃO =====
 function showTab(tab) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
   document.getElementById('nav-' + tab).classList.add('active');
+  if (tab === 'agenda') { renderCalendario(); renderListaVisitas(); }
 }
 
 function abrirModal(id) { document.getElementById(id).classList.add('open'); }
