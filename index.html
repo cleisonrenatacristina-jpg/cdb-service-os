@@ -13,15 +13,479 @@
     --surface: #242840;
     --border: #2e3452;
     --border2: #3d4570;
-    --blue: #3b82f6;
-    --blue-hover: #1d4ed8;
-    --blue-dim: rgba(59, 130, 246, 0.15);
+    --orange: #1e3a8a;
+    --orange2: #1e40af;
+    --orange-dim: rgba(30,58,138,0.15);
     --text: #e8eaf0;
     --text2: #8b90a8;
     --text3: #565c7a;
     --green: #22c55e;
     --red: #ef4444;
     --yellow: #eab308;
+    --blue: #3b82f6;
     --radius: 8px;
     --radius-lg: 12px;
     --font-mono: 'Courier New', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; min-height: 100vh; }
+
+  /* SETUP SCREEN */
+  #setup-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem; }
+  #setup-screen h1 { font-size: 2rem; font-weight: 700; color: var(--orange); letter-spacing: -0.5px; margin-bottom: 0.25rem; }
+  #setup-screen p { color: var(--text2); margin-bottom: 2rem; }
+  .setup-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 2rem; width: 100%; max-width: 480px; }
+  .setup-card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 1.5rem; color: var(--text); }
+  .field { margin-bottom: 1rem; }
+  .field label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .field input, .field select, .field textarea { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); padding: 10px 12px; font-size: 14px; outline: none; transition: border 0.2s; }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--orange); }
+  .field textarea { resize: vertical; min-height: 80px; font-family: inherit; }
+  
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: var(--radius); border: none; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.15s; }
+  .btn-primary { background: var(--orange); color: #fff; }
+  .btn-primary:hover { background: var(--orange2); }
+  .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--border2); background: var(--bg3); }
+  .btn-danger { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn-full { width: 100%; justify-content: center; }
+
+  /* LAYOUT */
+  #app { display: none; flex-direction: column; min-height: 100vh; }
+  header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; }
+  .logo { font-weight: 700; font-size: 1.1rem; color: var(--orange); font-family: var(--font-mono); letter-spacing: 1px; }
+  .logo span { color: var(--text2); font-weight: 400; }
+  main { flex: 1; padding: 1.5rem; max-width: 1200px; margin: 0 auto; width: 100%; }
+
+  /* CARDS / TABLES */
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1rem; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1rem; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+  @media(max-width:700px) { .grid-2,.grid-4 { grid-template-columns: 1fr; } }
+
+  /* STAT CARDS */
+  .stat { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; }
+  .stat-label { font-size: 12px; color: var(--text3); margin-bottom: 6px; }
+  .stat-value { font-size: 28px; font-weight: 700; color: var(--text); font-family: var(--font-mono); }
+  .stat-value.orange { color: var(--orange); }
+  .stat-value.green { color: var(--green); }
+
+  /* OS TABLE */
+  .os-table { width: 100%; border-collapse: collapse; }
+  .os-table th { text-align: left; font-size: 11px; color: var(--text3); text-transform: uppercase; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  .os-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+  .os-id { font-family: var(--font-mono); font-size: 13px; font-weight: 800; color: #ffffff; background: #000000; border: 1px solid #333; padding: 3px 8px; border-radius: 5px; }
+  
+  .badge { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+  .badge-aberta { background: rgba(59,130,246,0.15); color: var(--blue); }
+  .badge-andamento { background: rgba(234,179,8,0.15); color: var(--yellow); }
+  .badge-concluida { background: rgba(34,197,94,0.15); color: var(--green); }
+  
+  .badge-alta { background: rgba(239,68,68,0.15); color: var(--red); }
+  .badge-media { background: rgba(234,179,8,0.15); color: var(--yellow); }
+  .badge-baixa { background: rgba(34,197,94,0.15); color: var(--green); }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; padding: 1rem; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto; }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1.25rem; border-bottom: 1px solid var(--border); }
+  .modal-body { padding: 1.5rem; }
+  .modal-footer { padding: 1rem; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+
+  /* CLIENT VIEW BANNER */
+  .client-banner { background: linear-gradient(135deg, var(--orange-dim), var(--bg2)); border: 1px solid var(--orange); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+  .client-banner h1 { font-size: 1.25rem; font-weight: 700; color: var(--blue); }
+  .client-banner p { color: var(--text2); font-size: 13px; margin-top: 4px; }
+
+  /* MATERIAL LIST STYLES */
+  .material-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .material-row input { flex: 1; }
+  .material-row input.qty { flex: 0 0 70px; text-align: center; }
+  .material-display-tag { background: var(--bg3); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border); font-size: 12px; margin-right: 5px; display: inline-block; }
+
+  .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+  .filter-bar input, .filter-bar select { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); padding: 8px 12px; }
+  select { background: var(--bg3) !important; }
+</style>
+</head>
+<body>
+
+<div id="setup-screen">
+  <div style="text-align:center;margin-bottom:2rem;">
+    <h1>CDB Service OS</h1>
+    <p>Manutenção Industrial — Sistema de Ordens de Serviço</p>
+  </div>
+  <div class="setup-card">
+    <h2>⚙️ Configuração do Supabase</h2>
+    <div class="field">
+      <label>URL do Projeto Supabase</label>
+      <input id="cfg-url" type="url" value="https://vrmlvywprggjkdqahodr.supabase.co" readonly style="opacity:0.6;cursor:not-allowed;"/>
+    </div>
+    <div class="field">
+      <label>Chave Pública (Anon Key)</label>
+      <input id="cfg-key" type="password" placeholder="Digite sua Anon Key do Supabase..."/>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="initSupabase()">Conectar Sistema</button>
+  </div>
+</div>
+
+<div id="client-view" style="display:none; padding:2rem; max-width:1100px; margin:0 auto;">
+  <div class="client-banner">
+    <div>
+      <h1>Painel do Cliente — CDB Service</h1>
+      <p>Consulte suas manutenções, veja materiais aplicados ou abra um novo chamado.</p>
+    </div>
+    <button class="btn btn-primary" onclick="openClientNewOsModal()">+ Abrir Nova OS</button>
+  </div>
+  <div class="filter-bar">
+    <input type="text" id="client-search" placeholder="Digite exatamente o nome da sua Empresa..." oninput="renderClientTable()" style="width:100%; max-width:400px;">
+  </div>
+  <div class="card">
+    <table class="os-table">
+      <thead>
+        <tr>
+          <th>OS ID</th>
+          <th>Equipamento</th>
+          <th>Descrição do Problema</th>
+          <th>Materiais Utilizados</th>
+          <th>Prioridade</th>
+          <th>Status Atual</th>
+        </tr>
+      </thead>
+      <tbody id="client-table-body">
+        <tr><td colspan="6" style="text-align:center; color:var(--text3);">Digite o nome da sua empresa acima para filtrar suas OS.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <div class="logo">CDB <span>Service OS</span></div>
+    <div class="header-right">
+      <button class="btn btn-primary btn-sm" onclick="openAdminNewOsModal()">+ Criar OS</button>
+      <button class="btn btn-secondary btn-sm" onclick="logout()">Sair</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="grid-4">
+      <div class="stat"><div class="stat-label">Total OS</div><div class="stat-value" id="stat-total">0</div></div>
+      <div class="stat"><div class="stat-label">Abertas</div><div class="stat-value orange" id="stat-abertas">0</div></div>
+      <div class="stat"><div class="stat-label">Em Andamento</div><div class="stat-value" style="color:var(--yellow);" id="stat-andamento">0</div></div>
+      <div class="stat"><div class="stat-label">Concluídas</div><div class="stat-value green" id="stat-concluidas">0</div></div>
+    </div>
+
+    <div class="filter-bar" style="margin-top:1.5rem;">
+      <input type="text" id="admin-search" placeholder="Buscar por cliente ou máquina..." oninput="renderAdminTable()">
+    </div>
+
+    <div class="card">
+      <table class="os-table">
+        <thead>
+          <tr>
+            <th>OS ID</th>
+            <th>Cliente</th>
+            <th>Equipamento</th>
+            <th>Materiais</th>
+            <th>Prioridade</th>
+            <th>Status</th>
+            <th>Ação</th>
+          </tr>
+        </thead>
+        <tbody id="admin-table-body"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="os-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-title">Ordem de Serviço</h2>
+      <button style="background:none; border:none; color:white; font-size:24px; cursor:pointer;" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="os-form" onsubmit="event.preventDefault();">
+        <input type="hidden" id="os-id-field">
+        <div class="field">
+          <label>Cliente / Empresa</label>
+          <input type="text" id="os-cliente" required>
+        </div>
+        <div class="field">
+          <label>Equipamento / Máquina</label>
+          <input type="text" id="os-equipamento" required>
+        </div>
+        <div class="field">
+          <label>Descrição Detalhada do Problema</label>
+          <textarea id="os-descricao" required></textarea>
+        </div>
+        
+        <div class="grid-2" id="admin-only-fields">
+          <div class="field">
+            <label>Prioridade</label>
+            <select id="os-prioridade">
+              <option value="baixa">Baixa</option>
+              <option value="media">Média</option>
+              <option value="alta">Alta</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Status</label>
+            <select id="os-status">
+              <option value="aberta">Aberta</option>
+              <option value="andamento">Em Andamento</option>
+              <option value="concluida">Concluída</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="materials-section" style="margin-top:1rem;">
+          <label style="font-size: 12px; color: var(--text2); text-transform: uppercase; display:block; margin-bottom:6px;">Materiais Aplicados nesta OS</label>
+          <div id="materials-container"></div>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="addMaterialRow()" style="margin-top:5px;">+ Adicionar Peça/Material</button>
+        </div>
+
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveOs()">Salvar Dados</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let supabaseClient = null;
+  let osDataList = [];
+  let isClientMode = false;
+
+  window.onload = function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('view') === 'client') {
+      isClientMode = true;
+      document.getElementById('setup-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('client-view').style.display = 'block';
+      
+      const savedKey = localStorage.getItem('sb-anon-key') || "";
+      if(savedKey) {
+         supabaseClient = supabase.createClient("https://vrmlvywprggjkdqahodr.supabase.co", savedKey);
+         fetchOrders();
+      }
+    }
+  }
+
+  async function initSupabase() {
+    const url = document.getElementById('cfg-url').value;
+    const key = document.getElementById('cfg-key').value;
+
+    if(!key) { alert("A chave Anon pública é obrigatória."); return; }
+
+    localStorage.setItem('sb-anon-key', key);
+    supabaseClient = supabase.createClient(url, key);
+
+    document.getElementById('setup-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    
+    await fetchOrders();
+  }
+
+  function logout() {
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('setup-screen').style.display = 'flex';
+  }
+
+  async function fetchOrders() {
+    if(!supabaseClient) return;
+    try {
+      const { data, error } = await supabaseClient.from('ordens_servico').select('*').order('id', { ascending: false });
+      if (error) throw error;
+      osDataList = data || [];
+      
+      if(isClientMode) {
+        renderClientTable();
+      } else {
+        updateDashboardCounters();
+        renderAdminTable();
+      }
+    } catch (err) {
+      console.error(err.message);
+    }
+  }
+
+  function updateDashboardCounters() {
+    document.getElementById('stat-total').innerText = osDataList.length;
+    document.getElementById('stat-abertas').innerText = osDataList.filter(o => o.status === 'aberta').length;
+    document.getElementById('stat-andamento').innerText = osDataList.filter(o => o.status === 'andamento').length;
+    document.getElementById('stat-concluidas').innerText = osDataList.filter(o => o.status === 'concluida').length;
+  }
+
+  function parseMaterials(materialsRaw) {
+    if(!materialsRaw) return [];
+    if(typeof materialsRaw === 'string') {
+      try { return JSON.parse(materialsRaw); } catch(e) { return []; }
+    }
+    return materialsRaw;
+  }
+
+  function renderAdminTable() {
+    const tbody = document.getElementById('admin-table-body');
+    const search = document.getElementById('admin-search').value.toLowerCase();
+    tbody.innerHTML = '';
+
+    const filtered = osDataList.filter(os => os.cliente.toLowerCase().includes(search) || os.equipamento.toLowerCase().includes(search));
+
+    filtered.forEach(os => {
+      const mats = parseMaterials(os.materiais);
+      let matsHtml = mats.map(m => `<span class="material-display-tag">${m.qtd}x ${m.nome}</span>`).join('') || 'Nenhum';
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><span class="os-id">#${os.id}</span></td>
+        <td><strong>${os.cliente}</strong></td>
+        <td>${os.equipamento}</td>
+        <td>${matsHtml}</td>
+        <td><span class="badge badge-${os.prioridade}">${os.prioridade}</span></td>
+        <td><span class="badge badge-${os.status}">${os.status}</span></td>
+        <td><button class="btn btn-secondary btn-sm" onclick="openEditOsModal(${os.id})">Editar / Peças</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderClientTable() {
+    const tbody = document.getElementById('client-table-body');
+    const search = document.getElementById('client-search').value.toLowerCase();
+    
+    if(!search) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text3);">Digite o nome da sua empresa acima para filtrar.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = '';
+    const filtered = osDataList.filter(os => os.cliente.toLowerCase().includes(search));
+
+    if(filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text2);">Nenhuma OS encontrada para este cliente.</td></tr>`;
+      return;
+    }
+
+    filtered.forEach(os => {
+      const mats = parseMaterials(os.materiais);
+      let matsHtml = mats.map(m => `<span class="material-display-tag">${m.qtd}x ${m.nome}</span>`).join('') || 'Nenhum item adicionado';
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><span class="os-id">#${os.id}</span></td>
+        <td><strong>${os.equipamento}</strong></td>
+        <td>${os.descricao}</td>
+        <td>${matsHtml}</td>
+        <td><span class="badge badge-${os.prioridade}">${os.prioridade}</span></td>
+        <td><span class="badge badge-${os.status}">${os.status}</span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function addMaterialRow(nome = '', qtd = 1) {
+    const container = document.getElementById('materials-container');
+    const div = document.createElement('div');
+    div.className = 'material-row';
+    div.innerHTML = `
+      <input type="text" placeholder="Nome do Material/Peça" value="${nome}" class="mat-name" required>
+      <input type="number" placeholder="Qtd" value="${qtd}" class="qty mat-qty" min="1" required>
+      <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">X</button>
+    `;
+    container.appendChild(div);
+  }
+
+  function getMaterialsPayload() {
+    const rows = document.querySelectorAll('.material-row');
+    const list = [];
+    rows.forEach(row => {
+      const nome = row.querySelector('.mat-name').value;
+      const qtd = row.querySelector('.mat-qty').value;
+      if(nome) list.push({ nome, qtd: parseInt(qtd) });
+    });
+    return list;
+  }
+
+  function openAdminNewOsModal() {
+    document.getElementById('os-form').reset();
+    document.getElementById('os-id-field').value = '';
+    document.getElementById('materials-container').innerHTML = '';
+    document.getElementById('admin-only-fields').style.display = 'grid';
+    document.getElementById('materials-section').style.display = 'block';
+    document.getElementById('modal-title').innerText = "Criar Nova OS (Modo Admin)";
+    document.getElementById('os-modal').classList.add('open');
+  }
+
+  function openClientNewOsModal() {
+    document.getElementById('os-form').reset();
+    document.getElementById('os-id-field').value = '';
+    document.getElementById('materials-container').innerHTML = '';
+    document.getElementById('admin-only-fields').style.display = 'none'; // Cliente não define status/prioridade
+    document.getElementById('materials-section').style.display = 'none';   // Cliente não injeta materiais
+    document.getElementById('modal-title').innerText = "Solicitar Nova Ordem de Serviço";
+    document.getElementById('os-modal').classList.add('open');
+  }
+
+  function openEditOsModal(id) {
+    const os = osDataList.find(o => o.id === id);
+    if(!os) return;
+
+    document.getElementById('os-id-field').value = os.id;
+    document.getElementById('os-cliente').value = os.cliente;
+    document.getElementById('os-equipamento').value = os.equipamento;
+    document.getElementById('os-descricao').value = os.descricao;
+    document.getElementById('os-prioridade').value = os.prioridade;
+    document.getElementById('os-status').value = os.status;
+    
+    document.getElementById('admin-only-fields').style.display = 'grid';
+    document.getElementById('materials-section').style.display = 'block';
+
+    const container = document.getElementById('materials-container');
+    container.innerHTML = '';
+    const mats = parseMaterials(os.materiais);
+    mats.forEach(m => addMaterialRow(m.nome, m.qtd));
+
+    document.getElementById('modal-title').innerText = `Editar OS #${os.id}`;
+    document.getElementById('os-modal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('os-modal').classList.remove('open');
+  }
+
+  async function saveOs() {
+    const id = document.getElementById('os-id-field').value;
+    
+    // Se for o cliente criando, assume valores padrão para triagem técnica
+    const payload = {
+      cliente: document.getElementById('os-cliente').value,
+      equipamento: document.getElementById('os-equipamento').value,
+      descricao: document.getElementById('os-descricao').value,
+      prioridade: isClientMode ? 'media' : document.getElementById('os-prioridade').value,
+      status: isClientMode ? 'aberta' : document.getElementById('os-status').value,
+      materiais: isClientMode ? [] : getMaterialsPayload()
+    };
+
+    try {
+      if(id) {
+        await supabaseClient.from('ordens_servico').update(payload).eq('id', id);
+      } else {
+        await supabaseClient.from('ordens_servico').insert([payload]);
+      }
+      closeModal();
+      await fetchOrders();
+    } catch (err) {
+      alert("Erro ao salvar no Supabase: " + err.message);
+    }
+  }
+</script>
+</body>
+</html>
