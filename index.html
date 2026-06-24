@@ -1799,9 +1799,14 @@ async function excluirCliente(id) {
 
 // ===== AGENDA DE VISITAS =====
 async function carregarVisitas() {
-  let q = 'visitas?select=*,clientes(id,nome),equipamentos(id,nome,modelo)&order=data_visita.asc,hora_prevista.asc';
-  if (MODO === 'client' && CLIENT_ID) q += `&cliente_id=eq.${CLIENT_ID}`;
-  allVisitas = await sbFetch(q) || [];
+  try {
+    let q = 'visitas?select=*,clientes(id,nome),equipamentos(id,nome,modelo)&order=data_visita.asc,hora_prevista.asc';
+    if (MODO === 'client' && CLIENT_ID) q += `&cliente_id=eq.${CLIENT_ID}`;
+    allVisitas = await sbFetch(q) || [];
+  } catch(e) {
+    allVisitas = [];
+    console.warn('Tabela visitas não encontrada. Execute o SQL de configuração no Supabase.');
+  }
   renderCalendario();
   renderListaVisitas();
 }
