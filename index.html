@@ -302,6 +302,26 @@
   /* Aprovação cliente */
   .aprovacao-banner { background:linear-gradient(135deg,rgba(30,58,138,.2),rgba(0,0,0,.3));border:1.5px solid var(--orange);border-radius:var(--radius-lg);padding:1.25rem 1.5rem;margin-bottom:1.5rem; }
 
+  /* ── PARCELAS / COBRANÇAS ── */
+  .parcela-row { display:grid;grid-template-columns:60px 1fr 120px 120px 100px auto;gap:8px;align-items:center;padding:8px 12px;border-radius:var(--radius);margin-bottom:4px;font-size:13px; }
+  .parcela-row.pago    { background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2); }
+  .parcela-row.atrasado{ background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25); }
+  .parcela-row.pendente{ background:var(--bg3);border:1px solid var(--border); }
+  .parcela-row.vence-hoje { background:rgba(234,179,8,.1);border:1px solid rgba(234,179,8,.35); }
+  .parc-num  { font-weight:700;color:var(--text2);text-align:center; }
+  .parc-badge { display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700; }
+  .parc-badge.pago     { background:rgba(34,197,94,.2);color:var(--green); }
+  .parc-badge.atrasado { background:rgba(239,68,68,.2);color:var(--red); }
+  .parc-badge.pendente { background:rgba(100,116,139,.2);color:#94a3b8; }
+  .parc-badge.vencendo { background:rgba(234,179,8,.2);color:var(--yellow); }
+
+  /* Alerta de débito */
+  .debito-banner { background:linear-gradient(135deg,rgba(239,68,68,.2),rgba(0,0,0,.5));border:2px solid var(--red);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;margin-bottom:1.25rem;animation:pisca 2s ease-in-out infinite; }
+  @keyframes pisca { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0)} 50%{box-shadow:0 0 20px 5px rgba(239,68,68,.3)} }
+  .debito-banner h3 { color:var(--red);margin-bottom:6px;font-size:15px; }
+  .debito-banner p  { font-size:13px;color:var(--text2); }
+  .aviso-vence { background:rgba(234,179,8,.1);border:1px solid rgba(234,179,8,.4);border-radius:var(--radius);padding:10px 14px;margin-bottom:8px;font-size:13px; }
+
   /* BANNER DE ALERTA DE VISITA */
   .alerta-visita-wrap { margin-bottom: 1.25rem; }
   .alerta-visita {
@@ -415,6 +435,9 @@
       <button class="btn btn-secondary btn-sm" onclick="sair()">Sair</button>
     </div>
   </header>
+  <!-- BANNER GLOBAL DE DÉBITO (aparece em todas as abas) -->
+  <div id="banner-debito-global" style="display:none;padding:0 1.5rem;padding-top:12px;max-width:1200px;margin:0 auto;width:100%;"></div>
+
   <main>
     <!-- DASHBOARD -->
     <div id="tab-dashboard" class="tab-content active">
@@ -565,6 +588,11 @@
         <h3 style="margin-bottom:4px;color:var(--orange);">Seus Orçamentos</h3>
         <p style="font-size:13px;color:var(--text2);">Revise e aprove ou recuse os orçamentos enviados.</p>
       </div>
+      <!-- Parcelas do cliente (só visível para cliente) -->
+      <div id="orc-parcelas-cliente" style="display:none;margin-bottom:1.25rem;">
+        <h3 style="font-size:14px;font-weight:700;margin-bottom:10px;">💳 Suas Parcelas e Cobranças</h3>
+        <div id="orc-parcelas-lista-cli"></div>
+      </div>
       <div class="filter-bar admin-only">
         <select id="orc-filtro-status" onchange="renderizarOrcamentos()">
           <option value="">Todos os status</option>
@@ -609,7 +637,26 @@
       <div id="contratos-lista" style="margin-bottom:1.5rem;"></div>
       <!-- Orçamentos do mês -->
       <div class="section-header"><h3 style="font-size:1rem;">📋 Orçamentos Executados no Mês</h3></div>
-      <div id="fat-orc-lista"></div>
+      <div id="fat-orc-lista" style="margin-bottom:1.5rem;"></div>
+
+      <!-- Parcelas / Cobranças -->
+      <div class="section-header">
+        <h3 style="font-size:1rem;">💳 Parcelas e Cobranças</h3>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select id="parc-filtro-status" onchange="renderizarParcelas()" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:7px 10px;font-size:12px;outline:none;">
+            <option value="">Todas</option>
+            <option value="pendente">Pendentes</option>
+            <option value="atrasado">Atrasadas</option>
+            <option value="pago">Pagas</option>
+          </select>
+          <select id="parc-filtro-cliente" onchange="renderizarParcelas()" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:7px 10px;font-size:12px;outline:none;">
+            <option value="">Todos os clientes</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="abrirModalParcela()">+ Lançar Parcela</button>
+        </div>
+      </div>
+      <div id="parc-alertas" style="margin-bottom:12px;"></div>
+      <div id="parcelas-lista"></div>
     </div>
 
     <!-- AGENDA -->
@@ -1063,6 +1110,71 @@
   </div>
 </div>
 
+<!-- MODAL: PARCELA / COBRANÇA -->
+<div class="modal-overlay" id="modal-parcela">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-parc-titulo">Nova Parcela / Cobrança</h2>
+      <button class="close-btn" onclick="fecharModal('modal-parcela')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Cliente *</label>
+        <select id="parc-cliente-id"></select>
+      </div>
+      <div class="field">
+        <label>Descrição / Referência *</label>
+        <input type="text" id="parc-desc" placeholder="Ex: Contrato mensal Jan/26, Orçamento ORC-001 parcela 1/3"/>
+      </div>
+      <div class="field">
+        <label>Tipo</label>
+        <select id="parc-tipo">
+          <option value="contrato">Contrato</option>
+          <option value="orcamento">Orçamento</option>
+          <option value="outro">Outro</option>
+        </select>
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label>Valor (R$) *</label>
+          <input type="number" id="parc-valor" placeholder="0,00" step="0.01" min="0"/>
+        </div>
+        <div class="field">
+          <label>Vencimento *</label>
+          <input type="date" id="parc-vencimento"/>
+        </div>
+      </div>
+      <div class="field" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:12px;">
+        <label style="margin-bottom:8px;display:block;">⚡ Gerar múltiplas parcelas automaticamente</label>
+        <div class="grid-2">
+          <div>
+            <label style="font-size:11px;color:var(--text3);">Nº de parcelas</label>
+            <input type="number" id="parc-qtd" value="1" min="1" max="36" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:7px 10px;font-size:13px;outline:none;" oninput="previewParcelas()"/>
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text3);">Intervalo</label>
+            <select id="parc-intervalo" onchange="previewParcelas()" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
+              <option value="30">Mensal (30 dias)</option>
+              <option value="15">Quinzenal (15 dias)</option>
+              <option value="7">Semanal (7 dias)</option>
+            </select>
+          </div>
+        </div>
+        <div id="parc-preview" style="margin-top:8px;font-size:12px;color:var(--text2);"></div>
+      </div>
+      <div class="field">
+        <label>Observações</label>
+        <input type="text" id="parc-obs" placeholder="Opcional"/>
+      </div>
+      <input type="hidden" id="parc-edit-id"/>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="fecharModal('modal-parcela')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarParcela()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: VISITA AGENDADA -->
 <div class="modal-overlay" id="modal-visita">
   <div class="modal">
@@ -1115,7 +1227,7 @@
 <script>
 // ===== ESTADO GLOBAL =====
 let SB_URL = '', SB_KEY = '', MODO = 'admin', CLIENT_CODE = '', CLIENT_ID = null;
-let allOS = [], allClientes = [], allEquipamentos = [], allMateriais = [], allVisitas = [], allOrcamentos = [], allContratos = [];
+let allOS = [], allClientes = [], allEquipamentos = [], allMateriais = [], allVisitas = [], allOrcamentos = [], allContratos = [], allParcelas = [];
 let osSendoEditada = null;
 const ADMIN_PASS = 'cdb2024';
 let calMes = new Date().getMonth(), calAno = new Date().getFullYear(), calDataFiltro = null;
@@ -1347,11 +1459,12 @@ function inicializarApp(clienteData) {
   carregarTudo();
   setTimeout(verificarAlertasMateriais, 2000);
   setTimeout(mostrarAlertasVisita, 3000);
+  setTimeout(verificarAlertasDebito, 4000);
 }
 
 // ===== DADOS =====
 async function carregarTudo() {
-  await Promise.all([carregarClientes(), carregarEquipamentos(), carregarOS(), carregarMateriais(), carregarVisitas(), carregarOrcamentos(), carregarContratos()]);
+  await Promise.all([carregarClientes(), carregarEquipamentos(), carregarOS(), carregarMateriais(), carregarVisitas(), carregarOrcamentos(), carregarContratos(), carregarParcelas()]);
   carregarDashboard();
   popularSelects();
   iniciarFaturamento();
@@ -1387,12 +1500,12 @@ async function carregarMateriais() {
 // ===== POPULARIZAR SELECTS =====
 function popularSelects() {
   // Selects de cliente nos modais
-  const selects = ['os-cliente-id', 'mat-cliente', 'equip-cliente-id', 'equip-filter-cliente', 'os-filter-cliente', 'dashboard-client-filter', 'agenda-filtro-cliente', 'visita-cliente-id', 'orc-cliente-id', 'orc-filtro-cliente', 'cont-cliente-id'];
+  const selects = ['os-cliente-id', 'mat-cliente', 'equip-cliente-id', 'equip-filter-cliente', 'os-filter-cliente', 'dashboard-client-filter', 'agenda-filtro-cliente', 'visita-cliente-id', 'orc-cliente-id', 'orc-filtro-cliente', 'cont-cliente-id', 'parc-cliente-id', 'parc-filtro-cliente'];
   selects.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     const prev = el.value;
-    const opts = ['dashboard-client-filter','os-filter-cliente','equip-filter-cliente','orc-filtro-cliente'].includes(el.id) ? '<option value="">Todos</option>' : '<option value="">Selecione...</option>';
+    const opts = ['dashboard-client-filter','os-filter-cliente','equip-filter-cliente','orc-filtro-cliente','parc-filtro-cliente'].includes(el.id) ? '<option value="">Todos</option>' : '<option value="">Selecione...</option>';
     el.innerHTML = opts + allClientes.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
     el.value = prev;
   });
@@ -2108,6 +2221,209 @@ async function excluirCliente(id) {
   await carregarClientes();
 }
 
+// ===== PARCELAS =====
+async function carregarParcelas() {
+  try {
+    let q = 'parcelas?select=*,clientes(id,nome)&order=data_vencimento.asc';
+    if (MODO === 'client' && CLIENT_ID) q += `&cliente_id=eq.${CLIENT_ID}`;
+    allParcelas = await sbFetch(q) || [];
+    await atualizarStatusParcelas();
+    verificarAlertasDebito();
+  } catch(e) { allParcelas = []; }
+}
+
+async function atualizarStatusParcelas() {
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const atrasadas = allParcelas.filter(p => {
+    if (p.status === 'pago') return false;
+    const venc = new Date(p.data_vencimento + 'T00:00:00');
+    return venc < hoje;
+  });
+  for (const p of atrasadas) {
+    if (p.status !== 'atrasado') {
+      try { await sbFetch(`parcelas?id=eq.${p.id}`, { method:'PATCH', body:JSON.stringify({status:'atrasado'}) }); p.status = 'atrasado'; } catch {}
+    }
+  }
+}
+
+function verificarAlertasDebito() {
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const em7 = new Date(hoje); em7.setDate(hoje.getDate()+7);
+
+  const atrasadas = allParcelas.filter(p => p.status === 'atrasado');
+  const vencendo  = allParcelas.filter(p => {
+    if (p.status !== 'pendente') return false;
+    const v = new Date(p.data_vencimento+'T00:00:00');
+    return v >= hoje && v <= em7;
+  });
+
+  // Banner no cliente (débitos dele)
+  const bannerGlobal = document.getElementById('banner-debito-global');
+  if (bannerGlobal) {
+    const minhasAtrasadas = MODO==='client' ? atrasadas.filter(p=>p.cliente_id===CLIENT_ID) : atrasadas;
+    if (minhasAtrasadas.length) {
+      const total = minhasAtrasadas.reduce((s,p)=>s+Number(p.valor||0),0);
+      bannerGlobal.style.display = 'block';
+      bannerGlobal.innerHTML = `<div class="debito-banner">
+        <h3>⚠️ ${MODO==='client'?'Você possui':'Clientes com'} parcelas em atraso!</h3>
+        <p>${minhasAtrasadas.length} parcela(s) atrasada(s) — Total: <strong>${fmtMoeda(total)}</strong></p>
+        ${MODO==='client'?'<p style="margin-top:6px;font-size:12px;">Entre em contato com a CDB Service para regularizar.</p>':''}
+        <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;">
+          ${minhasAtrasadas.slice(0,5).map(p=>`<span style="background:rgba(239,68,68,.2);color:var(--red);border-radius:6px;padding:3px 10px;font-size:12px;">${p.clientes?.nome||'Cliente'} — ${fmtDataSimples(p.data_vencimento)} — ${fmtMoeda(p.valor)}</span>`).join('')}
+        </div>
+      </div>`;
+    } else {
+      bannerGlobal.style.display = 'none';
+      bannerGlobal.innerHTML = '';
+    }
+  }
+
+  // Alertas na seção de parcelas (admin)
+  const parcAlertas = document.getElementById('parc-alertas');
+  if (parcAlertas && MODO==='admin') {
+    let html = '';
+    if (atrasadas.length) {
+      html += `<div class="debito-banner" style="margin-bottom:8px;">
+        <h3>🚨 ${atrasadas.length} parcela(s) em atraso</h3>
+        ${atrasadas.map(p=>`<div style="font-size:12px;margin-top:4px;">• ${p.clientes?.nome||''} — ${p.referencia_desc||''} — Vcto: ${fmtDataSimples(p.data_vencimento)} — ${fmtMoeda(p.valor)}</div>`).join('')}
+      </div>`;
+    }
+    if (vencendo.length) {
+      html += `<div class="aviso-vence">
+        <strong>📅 ${vencendo.length} parcela(s) vencem nos próximos 7 dias</strong>
+        ${vencendo.map(p=>`<div style="font-size:12px;margin-top:3px;">• ${p.clientes?.nome||''} — ${p.referencia_desc||''} — Vcto: ${fmtDataSimples(p.data_vencimento)} — ${fmtMoeda(p.valor)}</div>`).join('')}
+      </div>`;
+    }
+    parcAlertas.innerHTML = html;
+  }
+}
+
+function renderizarParcelas() {
+  const lista = document.getElementById('parcelas-lista');
+  if (!lista) return;
+  const filtStatus  = document.getElementById('parc-filtro-status')?.value || '';
+  const filtCliente = document.getElementById('parc-filtro-cliente')?.value || '';
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const em7  = new Date(hoje); em7.setDate(hoje.getDate()+7);
+
+  let parcs = allParcelas;
+  if (filtStatus)  parcs = parcs.filter(p => p.status === filtStatus);
+  if (filtCliente) parcs = parcs.filter(p => p.cliente_id === filtCliente);
+
+  if (!parcs.length) { lista.innerHTML = '<div class="empty" style="padding:1.5rem;"><p>Nenhuma parcela encontrada</p></div>'; return; }
+
+  const stLbl = { pago:'✅ Pago', atrasado:'⚠️ Atrasado', pendente:'⏳ Pendente' };
+
+  lista.innerHTML = parcs.map(p => {
+    const venc = new Date(p.data_vencimento+'T00:00:00');
+    const vencendoLogo = p.status === 'pendente' && venc >= hoje && venc <= em7;
+    const rowClass = p.status === 'pago' ? 'pago' : p.status === 'atrasado' ? 'atrasado' : vencendoLogo ? 'vence-hoje' : 'pendente';
+    const badgeClass = vencendoLogo ? 'vencendo' : p.status;
+    const badgeTxt   = vencendoLogo ? '🔔 Vence em breve' : stLbl[p.status] || p.status;
+    return `<div class="parcela-row ${rowClass}">
+      <div class="parc-num" style="font-size:11px;">${p.numero_parcela||1}/${p.total_parcelas||1}</div>
+      <div>
+        <div style="font-weight:600;">${p.referencia_desc||'Cobrança'}</div>
+        <div style="font-size:11px;color:var(--text2);">${p.clientes?.nome||''} · ${p.referencia_tipo||''}</div>
+        ${p.data_pagamento?`<div style="font-size:11px;color:var(--green);">Pago em: ${fmtDataSimples(p.data_pagamento)}</div>`:''}
+        ${p.observacoes?`<div style="font-size:11px;color:var(--text3);">${p.observacoes}</div>`:''}
+      </div>
+      <div style="font-weight:700;color:var(--green);font-family:monospace;font-size:14px;">${fmtMoeda(p.valor)}</div>
+      <div style="font-size:12px;${p.status==='atrasado'?'color:var(--red);font-weight:700;':''}">${fmtDataSimples(p.data_vencimento)}</div>
+      <div><span class="parc-badge ${badgeClass}">${badgeTxt}</span></div>
+      <div style="display:flex;gap:4px;">
+        ${p.status!=='pago'&&MODO==='admin'?`<button class="btn btn-secondary btn-sm" onclick="darBaixaParcela('${p.id}')" style="background:rgba(34,197,94,.15);color:var(--green);border-color:rgba(34,197,94,.3);">✅ Baixa</button>`:''}
+        ${MODO==='admin'?`<button class="btn btn-danger btn-sm" onclick="excluirParcela('${p.id}')">×</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function abrirModalParcela() {
+  document.getElementById('parc-edit-id').value = '';
+  document.getElementById('parc-desc').value = '';
+  document.getElementById('parc-valor').value = '';
+  document.getElementById('parc-vencimento').value = '';
+  document.getElementById('parc-obs').value = '';
+  document.getElementById('parc-qtd').value = '1';
+  document.getElementById('parc-cliente-id').value = '';
+  document.getElementById('parc-preview').textContent = '';
+  document.getElementById('modal-parc-titulo').textContent = 'Nova Parcela / Cobrança';
+  abrirModal('modal-parcela');
+}
+
+function previewParcelas() {
+  const qtd   = parseInt(document.getElementById('parc-qtd').value) || 1;
+  const inter  = parseInt(document.getElementById('parc-intervalo').value) || 30;
+  const venc  = document.getElementById('parc-vencimento').value;
+  const valor = parseFloat(document.getElementById('parc-valor').value) || 0;
+  if (!venc || qtd <= 1) { document.getElementById('parc-preview').textContent = ''; return; }
+  const datas = [];
+  let d = new Date(venc+'T00:00:00');
+  for (let i = 0; i < qtd; i++) {
+    datas.push(fmtDataSimples(d.toISOString().slice(0,10)));
+    d.setDate(d.getDate() + inter);
+  }
+  document.getElementById('parc-preview').innerHTML = `Serão geradas ${qtd} parcela(s) de ${fmtMoeda(valor)}: <strong>${datas.join(' · ')}</strong>`;
+}
+
+async function salvarParcela() {
+  const clienteId = document.getElementById('parc-cliente-id').value;
+  const desc  = document.getElementById('parc-desc').value.trim();
+  const valor = parseFloat(document.getElementById('parc-valor').value) || 0;
+  const venc  = document.getElementById('parc-vencimento').value;
+  const tipo  = document.getElementById('parc-tipo').value;
+  const obs   = document.getElementById('parc-obs').value;
+  const qtd   = parseInt(document.getElementById('parc-qtd').value) || 1;
+  const inter  = parseInt(document.getElementById('parc-intervalo').value) || 30;
+  if (!desc || !venc || !valor) { alert('Preencha descrição, valor e vencimento.'); return; }
+
+  let d = new Date(venc+'T00:00:00');
+  for (let i = 0; i < qtd; i++) {
+    const dataStr = d.toISOString().slice(0,10);
+    await sbFetch('parcelas', { method:'POST', body:JSON.stringify({
+      cliente_id: clienteId || null,
+      referencia_desc: desc,
+      referencia_tipo: tipo,
+      numero_parcela: i+1,
+      total_parcelas: qtd,
+      valor, data_vencimento: dataStr,
+      status: 'pendente',
+      observacoes: obs || null
+    })});
+    d.setDate(d.getDate() + inter);
+  }
+  fecharModal('modal-parcela');
+  await carregarParcelas();
+  renderizarParcelas();
+  verificarAlertasDebito();
+}
+
+async function darBaixaParcela(id) {
+  const hoje = new Date().toISOString().slice(0,10);
+  if (!confirm('Confirmar pagamento desta parcela hoje (' + hoje + ')?')) return;
+  await sbFetch(`parcelas?id=eq.${id}`, { method:'PATCH', body:JSON.stringify({status:'pago', data_pagamento:hoje}) });
+  await carregarParcelas();
+  renderizarParcelas();
+  renderizarFaturamento();
+  verificarAlertasDebito();
+}
+
+async function excluirParcela(id) {
+  if (!confirm('Excluir esta parcela?')) return;
+  await sbFetch(`parcelas?id=eq.${id}`, { method:'DELETE', prefer:'return=minimal' });
+  await carregarParcelas();
+  renderizarParcelas();
+}
+
+function popularSelectParcelas() {
+  const sel = document.getElementById('parc-filtro-cliente');
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">Todos os clientes</option>' + allClientes.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  sel.value = prev;
+}
+
 // ===== ORÇAMENTOS =====
 const fmtMoeda = v => 'R$ ' + Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const parseMoeda = s => parseFloat((s||'0').replace(/[^\d,]/g,'').replace(',','.')) || 0;
@@ -2356,6 +2672,30 @@ function verOrcamento(id) {
 }
 
 function imprimirOrcamento() { window.print(); }
+
+function renderParcelasCliente() {
+  const wrap = document.getElementById('orc-parcelas-cliente');
+  const lista = document.getElementById('orc-parcelas-lista-cli');
+  if (!wrap || !lista || MODO !== 'client') return;
+  const minhas = allParcelas.filter(p => p.cliente_id === CLIENT_ID);
+  if (!minhas.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  const stLbl = { pago:'✅ Pago', atrasado:'⚠️ Atrasado', pendente:'⏳ Pendente' };
+  lista.innerHTML = minhas.map(p => {
+    const cor = p.status==='pago'?'var(--green)':p.status==='atrasado'?'var(--red)':'var(--text2)';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px;flex-wrap:wrap;gap:8px;">
+      <div>
+        <div style="font-weight:600;font-size:13px;">${p.referencia_desc||'Cobrança'} (${p.numero_parcela||1}/${p.total_parcelas||1})</div>
+        <div style="font-size:11px;color:var(--text3);">Vencimento: ${fmtDataSimples(p.data_vencimento)}</div>
+        ${p.data_pagamento?`<div style="font-size:11px;color:var(--green);">Pago em: ${fmtDataSimples(p.data_pagamento)}</div>`:''}
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:16px;font-weight:800;font-family:monospace;color:var(--green);">${fmtMoeda(p.valor)}</div>
+        <span style="color:${cor};font-size:12px;font-weight:700;">${stLbl[p.status]||p.status}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
 
 // ===== CONTRATOS =====
 function abrirModalContrato() {
@@ -2839,8 +3179,8 @@ function showTab(tab) {
   document.getElementById('tab-' + tab).classList.add('active');
   document.getElementById('nav-' + tab).classList.add('active');
   if (tab === 'agenda') { renderCalendario(); renderListaVisitas(); }
-  if (tab === 'orcamentos') { renderizarOrcamentos(); }
-  if (tab === 'faturamento') { renderizarFaturamento(); renderizarContratos(); }
+  if (tab === 'orcamentos') { renderizarOrcamentos(); renderParcelasCliente(); }
+  if (tab === 'faturamento') { renderizarFaturamento(); renderizarContratos(); renderizarParcelas(); popularSelectParcelas(); }
 }
 
 function abrirModal(id) { document.getElementById(id).classList.add('open'); }
