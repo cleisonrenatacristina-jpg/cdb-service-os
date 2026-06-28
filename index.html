@@ -1211,6 +1211,10 @@
         <label>Técnico Responsável</label>
         <input id="visita-tecnico" type="text" placeholder="Nome do técnico"/>
       </div>
+      <div class="field" id="campo-hora-chegada" style="display:none;">
+        <label>⏰ Hora de Chegada na Fábrica</label>
+        <input id="visita-hora-chegada" type="datetime-local"/>
+      </div>
       <div class="field">
         <label>Observações / Objetivo da visita</label>
         <textarea id="visita-obs" placeholder="Descreva o objetivo desta visita, o que será feito, etc." style="min-height:80px;"></textarea>
@@ -3101,6 +3105,8 @@ function abrirModalVisita() {
   document.getElementById('visita-hora').value = '';
   document.getElementById('visita-tecnico').value = '';
   document.getElementById('visita-obs').value = '';
+  document.getElementById('visita-hora-chegada').value = '';
+  document.getElementById('campo-hora-chegada').style.display = 'none';
   document.getElementById('modal-visita-titulo').textContent = '📅 Agendar Visita';
   abrirModal('modal-visita');
 }
@@ -3116,6 +3122,19 @@ async function editarVisita(id) {
   document.getElementById('visita-hora').value = v.hora_prevista ? v.hora_prevista.slice(0,5) : '';
   document.getElementById('visita-tecnico').value = v.tecnico || '';
   document.getElementById('visita-obs').value = v.observacoes || '';
+  // campo chegada: converter ISO → datetime-local (YYYY-MM-DDTHH:MM)
+  const chegadaInput = document.getElementById('visita-hora-chegada');
+  if (v.hora_chegada) {
+    const d = new Date(v.hora_chegada);
+    chegadaInput.value = d.getFullYear() + '-' +
+      String(d.getMonth()+1).padStart(2,'0') + '-' +
+      String(d.getDate()).padStart(2,'0') + 'T' +
+      String(d.getHours()).padStart(2,'0') + ':' +
+      String(d.getMinutes()).padStart(2,'0');
+  } else {
+    chegadaInput.value = '';
+  }
+  document.getElementById('campo-hora-chegada').style.display = '';
   document.getElementById('modal-visita-titulo').textContent = '✏️ Editar Visita';
   abrirModal('modal-visita');
 }
@@ -3136,6 +3155,7 @@ async function salvarVisita() {
   const data = document.getElementById('visita-data').value;
   if (!clienteId || !data) { alert('Cliente e data são obrigatórios.'); return; }
   const equipId = document.getElementById('visita-equipamento-id').value;
+  const horaChegadaVal = document.getElementById('visita-hora-chegada').value;
   const dados = {
     cliente_id: clienteId,
     equipamento_id: equipId || null,
@@ -3143,6 +3163,7 @@ async function salvarVisita() {
     hora_prevista: document.getElementById('visita-hora').value || null,
     tecnico: document.getElementById('visita-tecnico').value || null,
     observacoes: document.getElementById('visita-obs').value || null,
+    hora_chegada: horaChegadaVal ? new Date(horaChegadaVal).toISOString() : null,
   };
   if (id) {
     await sbFetch(`visitas?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(dados) });
