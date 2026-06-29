@@ -1817,17 +1817,37 @@ async function salvarOS() {
     if (nome) materiaisUtilizados.push({ nome, qtd, un });
   });
 
+  // Coletar pausas
+  const pausaRows = document.querySelectorAll('.pausa-row-item');
+  const pausasColetadas = [];
+  pausaRows.forEach(row => {
+    const motivo = row.querySelector('.pausa-motivo-i')?.value.trim() || '';
+    const inicio = row.querySelector('.pausa-inicio-i')?.value || '';
+    const fim = row.querySelector('.pausa-fim-i')?.value || '';
+    if (motivo || inicio) pausasColetadas.push({ motivo, inicio, fim });
+  });
+
+  const dataInicioVal = document.getElementById('os-data-inicio').value;
+  const dataConclusaoVal = document.getElementById('os-data-conclusao').value;
+
   const payload = {
     cliente_id: clienteId,
     equipamento_id: equipId,
     problema,
     prioridade,
+    aberto_por: abertoPor,
     updated_at: new Date().toISOString(),
     ...(MODO === 'admin' ? {
       status: document.getElementById('os-status').value,
       diagnostico: document.getElementById('os-diagnostico').value.trim(),
       fotos: document.getElementById('os-fotos').value.trim(),
+      tipo_servico: document.getElementById('os-tipo-servico').value || null,
+      causa: document.getElementById('os-causa').value.trim() || null,
+      tecnico: document.getElementById('os-tecnico').value.trim() || null,
       materiais_utilizados: materiaisUtilizados.length ? JSON.stringify(materiaisUtilizados) : null,
+      pausas: pausasColetadas.length ? JSON.stringify(pausasColetadas) : null,
+      data_inicio: dataInicioVal ? new Date(dataInicioVal).toISOString() : null,
+      data_conclusao: dataConclusaoVal ? new Date(dataConclusaoVal).toISOString() : null,
     } : {})
   };
 
